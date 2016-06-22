@@ -119,8 +119,10 @@ func renderLoop(window *glfw.Window, shaderProgram uint32, modelUniform int32) {
 	gl.Enable(gl.CULL_FACE)
 	gl.CullFace(gl.BACK)
 	t0 := time.Now()
+	startT := t0
+	frametime := 167 * time.Nanosecond
 	for !window.ShouldClose() {
-		angle := float32(time.Since(t0)/time.Millisecond) / 1000
+		angle := float32(time.Since(t0)) / float32(time.Second) * math.Pi / 4
 		model := mgl32.HomogRotate3D(angle, mgl32.Vec3{0, 1, 0})
 		handleEvents(window)
 		gl.Clear(gl.COLOR_BUFFER_BIT)
@@ -131,6 +133,10 @@ func renderLoop(window *glfw.Window, shaderProgram uint32, modelUniform int32) {
 		gl.DrawElements(gl.TRIANGLE_FAN, 4, gl.UNSIGNED_INT, gl.PtrOffset(12*4))
 		gl.DrawElements(gl.TRIANGLE_FAN, 4, gl.UNSIGNED_INT, gl.PtrOffset(16*4))
 		window.SwapBuffers()
+		if elapsed := time.Since(startT); elapsed < frametime {
+			time.Tick(frametime - elapsed)
+		}
+		startT = time.Now()
 		glfw.PollEvents()
 	}
 }
