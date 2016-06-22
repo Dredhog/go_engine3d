@@ -118,12 +118,16 @@ func openglWork() {
 func renderLoop(window *glfw.Window, shaderProgram uint32, modelUniform int32) {
 	gl.Enable(gl.CULL_FACE)
 	gl.CullFace(gl.BACK)
+	model := mgl32.Ident4()
 	t0 := time.Now()
-	startT := t0
-	frametime := 167 * time.Nanosecond
+	startTime := t0
+	frameTime := time.Nanosecond
+	frames := 0
+	seconds := 0
 	for !window.ShouldClose() {
-		angle := float32(time.Since(t0)) / float32(time.Second) * math.Pi / 4
-		model := mgl32.HomogRotate3D(angle, mgl32.Vec3{0, 1, 0})
+		frames++
+		totalTime := float32(time.Since(t0)) / float32(time.Second)
+		model = mgl32.HomogRotate3D(totalTime*math.Pi/4, mgl32.Vec3{0, 1, 0})
 		handleEvents(window)
 		gl.Clear(gl.COLOR_BUFFER_BIT)
 		gl.UniformMatrix4fv(modelUniform, 1, false, &model[0])
@@ -132,11 +136,14 @@ func renderLoop(window *glfw.Window, shaderProgram uint32, modelUniform int32) {
 		gl.DrawElements(gl.TRIANGLE_FAN, 4, gl.UNSIGNED_INT, gl.PtrOffset(8*4))
 		gl.DrawElements(gl.TRIANGLE_FAN, 4, gl.UNSIGNED_INT, gl.PtrOffset(12*4))
 		gl.DrawElements(gl.TRIANGLE_FAN, 4, gl.UNSIGNED_INT, gl.PtrOffset(16*4))
-		window.SwapBuffers()
-		if elapsed := time.Since(startT); elapsed < frametime {
-			time.Tick(frametime - elapsed)
+		time.Sleep(frameTime - time.Since(startTime))
+		if int(time.Since(t0)/time.Second) > seconds {
+			seconds++
+			fmt.Println("Fps:", frames)
+			frames = 0
 		}
-		startT = time.Now()
+		startTime = time.Now()
+		window.SwapBuffers()
 		glfw.PollEvents()
 	}
 }
