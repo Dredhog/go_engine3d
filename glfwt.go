@@ -112,49 +112,45 @@ func openglWork() {
 
 	modelUniform := gl.GetUniformLocation(shaderProgram, gl.Str("model\x00"))
 
-	renderLoop(window, shaderProgram, modelUniform)
-}
-
-func renderLoop(window *glfw.Window, shaderProgram uint32, modelUniform int32) {
-	gl.Enable(gl.CULL_FACE)
-	gl.CullFace(gl.BACK)
-	model := mgl32.Ident4()
-	t0 := time.Now()
-	startTime := t0
-	frameTime := time.Nanosecond
-	frames := 0
-	seconds := 0
-	for !window.ShouldClose() {
-		frames++
-		totalTime := float32(time.Since(t0)) / float32(time.Second)
-		model = mgl32.HomogRotate3D(totalTime*math.Pi/4, mgl32.Vec3{0, 1, 0})
-		handleEvents(window)
-		gl.Clear(gl.COLOR_BUFFER_BIT)
-		gl.UniformMatrix4fv(modelUniform, 1, false, &model[0])
-		gl.DrawElements(gl.TRIANGLE_FAN, 4, gl.UNSIGNED_INT, gl.PtrOffset(0))
-		gl.DrawElements(gl.TRIANGLE_FAN, 4, gl.UNSIGNED_INT, gl.PtrOffset(4*4))
-		gl.DrawElements(gl.TRIANGLE_FAN, 4, gl.UNSIGNED_INT, gl.PtrOffset(8*4))
-		gl.DrawElements(gl.TRIANGLE_FAN, 4, gl.UNSIGNED_INT, gl.PtrOffset(12*4))
-		gl.DrawElements(gl.TRIANGLE_FAN, 4, gl.UNSIGNED_INT, gl.PtrOffset(16*4))
-		time.Sleep(frameTime - time.Since(startTime))
-		if int(time.Since(t0)/time.Second) > seconds {
-			seconds++
-			fmt.Println("Fps:", frames)
-			frames = 0
+	func(window *glfw.Window, shaderProgram uint32, modelUniform int32) {
+		gl.Enable(gl.CULL_FACE)
+		gl.CullFace(gl.BACK)
+		model := mgl32.Ident4()
+		t0 := time.Now()
+		startTime := t0
+		frameTime := 16 * time.Millisecond
+		frames := 0
+		seconds := 0
+		for !window.ShouldClose() {
+			frames++
+			totalTime := float32(time.Since(t0)) / float32(time.Second)
+			model = mgl32.HomogRotate3D(totalTime*math.Pi/4, mgl32.Vec3{0, 1, 0})
+			func(window *glfw.Window) {
+				//Pressing space to exit
+				if window.GetKey(glfw.KeySpace) == glfw.Press {
+					window.SetShouldClose(true)
+				}
+				//Pressing enter to exit
+				if window.GetKey(glfw.KeyEnter) == glfw.Press {
+					window.SetShouldClose(true)
+				}
+			}(window)
+			gl.Clear(gl.COLOR_BUFFER_BIT)
+			gl.UniformMatrix4fv(modelUniform, 1, false, &model[0])
+			gl.DrawElements(gl.TRIANGLE_FAN, 4, gl.UNSIGNED_INT, gl.PtrOffset(0))
+			gl.DrawElements(gl.TRIANGLE_FAN, 4, gl.UNSIGNED_INT, gl.PtrOffset(4*4))
+			gl.DrawElements(gl.TRIANGLE_FAN, 4, gl.UNSIGNED_INT, gl.PtrOffset(8*4))
+			gl.DrawElements(gl.TRIANGLE_FAN, 4, gl.UNSIGNED_INT, gl.PtrOffset(12*4))
+			gl.DrawElements(gl.TRIANGLE_FAN, 4, gl.UNSIGNED_INT, gl.PtrOffset(16*4))
+			time.Sleep(frameTime - time.Since(startTime))
+			if int(time.Since(t0)/time.Second) > seconds {
+				seconds++
+				fmt.Println("Fps:", frames)
+				frames = 0
+			}
+			startTime = time.Now()
+			window.SwapBuffers()
+			glfw.PollEvents()
 		}
-		startTime = time.Now()
-		window.SwapBuffers()
-		glfw.PollEvents()
-	}
-}
-
-func handleEvents(window *glfw.Window) {
-	//Pressing space to exit
-	if window.GetKey(glfw.KeySpace) == glfw.Press {
-		window.SetShouldClose(true)
-	}
-	//Pressing enter to exit
-	if window.GetKey(glfw.KeyEnter) == glfw.Press {
-		window.SetShouldClose(true)
-	}
+	}(window, shaderProgram, modelUniform)
 }
