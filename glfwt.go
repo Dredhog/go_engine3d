@@ -31,6 +31,7 @@ var elements = []uint32{
 	0, 4, 5, 1,
 	1, 5, 6, 2,
 	4, 0, 3, 7,
+	2, 6, 7, 3,
 }
 
 const (
@@ -112,10 +113,12 @@ func openglWork() {
 
 	modelUniform := gl.GetUniformLocation(shaderProgram, gl.Str("model\x00"))
 
+	//Game loop function
 	func(window *glfw.Window, shaderProgram uint32, modelUniform int32) {
 		gl.Enable(gl.CULL_FACE)
 		gl.CullFace(gl.BACK)
 		model := mgl32.Ident4()
+		playerPos := mgl32.Vec3{0, -2, 5}
 		t0 := time.Now()
 		startTime := t0
 		frameTime := 16 * time.Millisecond
@@ -123,9 +126,11 @@ func openglWork() {
 		seconds := 0
 		for !window.ShouldClose() {
 			frames++
-			totalTime := float32(time.Since(t0)) / float32(time.Second)
-			model = mgl32.HomogRotate3D(totalTime*math.Pi/4, mgl32.Vec3{0, 1, 0})
-			func(window *glfw.Window) {
+
+			//Input function
+			func(window *glfw.Window, pos *mgl32.Vec3) {
+				var navigationSpeed float32 = 5.0 / 60
+
 				//Pressing space to exit
 				if window.GetKey(glfw.KeySpace) == glfw.Press {
 					window.SetShouldClose(true)
@@ -134,7 +139,27 @@ func openglWork() {
 				if window.GetKey(glfw.KeyEnter) == glfw.Press {
 					window.SetShouldClose(true)
 				}
-			}(window)
+				//First person motion
+				if window.GetKey(glfw.KeyW) == glfw.Press {
+					pos[2] -= navigationSpeed
+				} else if window.GetKey(glfw.KeyS) == glfw.Press {
+					pos[2] += navigationSpeed
+				}
+				if window.GetKey(glfw.KeyA) == glfw.Press {
+					pos[0] -= navigationSpeed
+				} else if window.GetKey(glfw.KeyD) == glfw.Press {
+					pos[0] += navigationSpeed
+				}
+			}(window, &playerPos)
+
+			//Alter the spectator position
+			camera := mgl32.LookAtV(playerPos, playerPos.Add(mgl32.Vec3{0, 1, -3}), mgl32.Vec3{0, 1, 0})
+			gl.UniformMatrix4fv(cameraUniform, 1, false, &camera[0])
+
+			//Rotate the cube
+			totalTime := float32(time.Since(t0)) / float32(time.Second)
+			model = mgl32.HomogRotate3D(totalTime*math.Pi/4, mgl32.Vec3{1, 1, 1}.Normalize())
+
 			gl.Clear(gl.COLOR_BUFFER_BIT)
 			gl.UniformMatrix4fv(modelUniform, 1, false, &model[0])
 			gl.DrawElements(gl.TRIANGLE_FAN, 4, gl.UNSIGNED_INT, gl.PtrOffset(0))
@@ -142,10 +167,11 @@ func openglWork() {
 			gl.DrawElements(gl.TRIANGLE_FAN, 4, gl.UNSIGNED_INT, gl.PtrOffset(8*4))
 			gl.DrawElements(gl.TRIANGLE_FAN, 4, gl.UNSIGNED_INT, gl.PtrOffset(12*4))
 			gl.DrawElements(gl.TRIANGLE_FAN, 4, gl.UNSIGNED_INT, gl.PtrOffset(16*4))
+			gl.DrawElements(gl.TRIANGLE_FAN, 4, gl.UNSIGNED_INT, gl.PtrOffset(20*4))
 			time.Sleep(frameTime - time.Since(startTime))
 			if int(time.Since(t0)/time.Second) > seconds {
 				seconds++
-				fmt.Println("Fps:", frames)
+				fmt.Println("FPS:", frames)
 				frames = 0
 			}
 			startTime = time.Now()
