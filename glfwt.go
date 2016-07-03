@@ -35,8 +35,8 @@ var elements = []uint32{
 }
 
 const (
-	screenWidth  = 640
-	screenHeight = 480
+	screenWidth  = 1920
+	screenHeight = 1080
 )
 
 // OpenglWork is responsible for everything drawn in the window context
@@ -53,7 +53,7 @@ func openglWork() {
 	glfw.WindowHint(glfw.ContextVersionMinor, 1)
 	glfw.WindowHint(glfw.OpenGLProfile, glfw.OpenGLCoreProfile)
 	glfw.WindowHint(glfw.OpenGLForwardCompatible, glfw.True)
-	window, err := glfw.CreateWindow(screenWidth, screenHeight, "Opengl", nil, nil)
+	window, err := glfw.CreateWindow(screenWidth, screenHeight, "Opengl", glfw.GetPrimaryMonitor(), nil)
 	if err != nil {
 		panic(err)
 	}
@@ -104,7 +104,7 @@ func openglWork() {
 
 	//Uniform variables
 	projectionUniform := gl.GetUniformLocation(shaderProgram, gl.Str("projection\x00"))
-	projection := mgl32.Perspective(math.Pi/4, 1.2, 0.0, 10.0)
+	projection := mgl32.Perspective(math.Pi/4, 1.6, 0.0, 10.0)
 	gl.UniformMatrix4fv(projectionUniform, 1, false, &projection[0])
 
 	cameraUniform := gl.GetUniformLocation(shaderProgram, gl.Str("camera\x00"))
@@ -121,7 +121,7 @@ func openglWork() {
 		playerPos := mgl32.Vec3{0, -2, 5}
 		t0 := time.Now()
 		startTime := t0
-		frameTime := 16 * time.Millisecond
+		frameTime := 8 * time.Millisecond
 		frames := 0
 		seconds := 0
 		for !window.ShouldClose() {
@@ -129,7 +129,7 @@ func openglWork() {
 
 			//Input function
 			func(window *glfw.Window, pos *mgl32.Vec3) {
-				var navigationSpeed float32 = 5.0 / 60
+				var navigationSpeed float32 = 5.0 / 120
 
 				//Pressing space to exit
 				if window.GetKey(glfw.KeySpace) == glfw.Press {
@@ -158,7 +158,7 @@ func openglWork() {
 
 			//Rotate the cube
 			totalTime := float32(time.Since(t0)) / float32(time.Second)
-			model = mgl32.HomogRotate3D(totalTime*math.Pi/4, mgl32.Vec3{1, 1, 1}.Normalize())
+			model = mgl32.HomogRotate3D(totalTime*math.Pi/4, mgl32.Vec3{1, 1, -1}.Normalize())
 
 			gl.Clear(gl.COLOR_BUFFER_BIT)
 			gl.UniformMatrix4fv(modelUniform, 1, false, &model[0])
