@@ -6,10 +6,11 @@ import (
 	"math"
 	"time"
 
+	"training/glfwt/mesh"
+
 	"github.com/go-gl/gl/v4.1-core/gl"
 	"github.com/go-gl/glfw/v3.1/glfw"
 	"github.com/go-gl/mathgl/mgl32"
-	"training/glfwt/mesh"
 )
 
 var vertices = []float32{
@@ -112,16 +113,15 @@ func openglWork() {
 	gl.UniformMatrix4fv(projectionUniform, 1, false, &projection[0])
 
 	cameraUniform := gl.GetUniformLocation(shaderProgram, gl.Str("camera\x00"))
-	camera := mgl32.LookAtV(mgl32.Vec3{-3, 3, -3}, mgl32.Vec3{0, 0, 0}, mgl32.Vec3{0, 1, 0})
-	gl.UniformMatrix4fv(cameraUniform, 1, false, &camera[0])
 
 	modelUniform := gl.GetUniformLocation(shaderProgram, gl.Str("model\x00"))
 
 	//Game loop function
 	func(window *glfw.Window, shaderProgram uint32, modelUniform int32) {
+		timeUniform := gl.GetUniformLocation(shaderProgram, gl.Str("time\x00"))
 		/*
-		gl.Enable(gl.CULL_FACE)
-		gl.CullFace(gl.BACK)
+			gl.Enable(gl.CULL_FACE)
+			gl.CullFace(gl.BACK)
 		*/
 		model := mgl32.Ident4()
 		playerPos := mgl32.Vec3{0, 2, 0}
@@ -164,11 +164,12 @@ func openglWork() {
 
 			//Rotate the cube
 			/*
-			totalTime := float32(time.Since(t0)) / float32(time.Second)
-			model = mgl32.HomogRotate3D(totalTime*math.Pi/4, mgl32.Vec3{1, 1, -1}.Normalize())
+				totalTime := float32(time.Since(t0)) / float32(time.Second)
+				model = mgl32.HomogRotate3D(totalTime*math.Pi/4, mgl32.Vec3{1, 1, -1}.Normalize())
 			*/
-
 			gl.Clear(gl.COLOR_BUFFER_BIT)
+
+			gl.Uniform1f(timeUniform, float32(time.Since(t0)))
 			gl.UniformMatrix4fv(modelUniform, 1, false, &model[0])
 			gl.DrawElements(gl.TRIANGLES, int32(len(elements)), gl.UNSIGNED_INT, gl.PtrOffset(0))
 			time.Sleep(frameTime - time.Since(startTime))
@@ -177,6 +178,7 @@ func openglWork() {
 				fmt.Println("FPS:", frames)
 				frames = 0
 			}
+
 			startTime = time.Now()
 			window.SwapBuffers()
 			glfw.PollEvents()
