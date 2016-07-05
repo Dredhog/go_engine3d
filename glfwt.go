@@ -9,6 +9,7 @@ import (
 	"github.com/go-gl/gl/v4.1-core/gl"
 	"github.com/go-gl/glfw/v3.1/glfw"
 	"github.com/go-gl/mathgl/mgl32"
+	"training/glfwt/mesh"
 )
 
 var vertices = []float32{
@@ -41,6 +42,9 @@ const (
 
 // OpenglWork is responsible for everything drawn in the window context
 func openglWork() {
+
+	//Generate the mesh
+	vertices, elements, _ = mesh.GeneratePlane(10, 10)
 
 	//Set up glfw
 	if err := glfw.Init(); err != nil {
@@ -115,10 +119,12 @@ func openglWork() {
 
 	//Game loop function
 	func(window *glfw.Window, shaderProgram uint32, modelUniform int32) {
+		/*
 		gl.Enable(gl.CULL_FACE)
 		gl.CullFace(gl.BACK)
+		*/
 		model := mgl32.Ident4()
-		playerPos := mgl32.Vec3{0, -2, 5}
+		playerPos := mgl32.Vec3{0, 2, 0}
 		t0 := time.Now()
 		startTime := t0
 		frameTime := 8 * time.Millisecond
@@ -153,21 +159,18 @@ func openglWork() {
 			}(window, &playerPos)
 
 			//Alter the spectator position
-			camera := mgl32.LookAtV(playerPos, playerPos.Add(mgl32.Vec3{0, 1, -3}), mgl32.Vec3{0, 1, 0})
+			camera := mgl32.LookAtV(playerPos, playerPos.Add(mgl32.Vec3{0, -1, -3}), mgl32.Vec3{0, 1, 0})
 			gl.UniformMatrix4fv(cameraUniform, 1, false, &camera[0])
 
 			//Rotate the cube
+			/*
 			totalTime := float32(time.Since(t0)) / float32(time.Second)
 			model = mgl32.HomogRotate3D(totalTime*math.Pi/4, mgl32.Vec3{1, 1, -1}.Normalize())
+			*/
 
 			gl.Clear(gl.COLOR_BUFFER_BIT)
 			gl.UniformMatrix4fv(modelUniform, 1, false, &model[0])
-			gl.DrawElements(gl.TRIANGLE_FAN, 4, gl.UNSIGNED_INT, gl.PtrOffset(0))
-			gl.DrawElements(gl.TRIANGLE_FAN, 4, gl.UNSIGNED_INT, gl.PtrOffset(4*4))
-			gl.DrawElements(gl.TRIANGLE_FAN, 4, gl.UNSIGNED_INT, gl.PtrOffset(8*4))
-			gl.DrawElements(gl.TRIANGLE_FAN, 4, gl.UNSIGNED_INT, gl.PtrOffset(12*4))
-			gl.DrawElements(gl.TRIANGLE_FAN, 4, gl.UNSIGNED_INT, gl.PtrOffset(16*4))
-			gl.DrawElements(gl.TRIANGLE_FAN, 4, gl.UNSIGNED_INT, gl.PtrOffset(20*4))
+			gl.DrawElements(gl.TRIANGLES, int32(len(elements)), gl.UNSIGNED_INT, gl.PtrOffset(0))
 			time.Sleep(frameTime - time.Since(startTime))
 			if int(time.Since(t0)/time.Second) > seconds {
 				seconds++
