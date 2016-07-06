@@ -45,7 +45,7 @@ const (
 func openglWork() {
 
 	//Generate the mesh
-	vertices, elements, _ = mesh.GeneratePlane(10, 10)
+	vertices, elements, _ = mesh.GeneratePlane(50, 50)
 
 	//Set up glfw
 	if err := glfw.Init(); err != nil {
@@ -113,18 +113,33 @@ func openglWork() {
 	gl.UniformMatrix4fv(projectionUniform, 1, false, &projection[0])
 
 	cameraUniform := gl.GetUniformLocation(shaderProgram, gl.Str("camera\x00"))
-
 	modelUniform := gl.GetUniformLocation(shaderProgram, gl.Str("model\x00"))
+	timeUniform := gl.GetUniformLocation(shaderProgram, gl.Str("time\x00"))
+
+	//Uniform variables for waves
+	amplitudeUniform := gl.GetUniformLocation(shaderProgram, gl.Str("_amplitude\x00"))
+	weightXUniform := gl.GetUniformLocation(shaderProgram, gl.Str("_weightX\x00"))
+	weightYUniform := gl.GetUniformLocation(shaderProgram, gl.Str("_weightY\x00"))
+	weightZUniform := gl.GetUniformLocation(shaderProgram, gl.Str("_weightZ\x00"))
+	periodUniform := gl.GetUniformLocation(shaderProgram, gl.Str("_period\x00"))
+
+	//Backing varaibles for wave uniforms
+	amplitude := float32(0.1)
+	weightX := float32(0)
+	weightY := float32(0)
+	weightZ := float32(0)
+	period := float32(1000000000)
 
 	//Game loop function
 	func(window *glfw.Window, shaderProgram uint32, modelUniform int32) {
-		timeUniform := gl.GetUniformLocation(shaderProgram, gl.Str("time\x00"))
 		/*
 			gl.Enable(gl.CULL_FACE)
 			gl.CullFace(gl.BACK)
+			gl.Enable(gl.DEPTH_TEST)
+			gl.DepthFunc(gl.LESS)
 		*/
 		model := mgl32.Ident4()
-		playerPos := mgl32.Vec3{0, 2, 0}
+		playerPos := mgl32.Vec3{0, 5, 0}
 		t0 := time.Now()
 		startTime := t0
 		frameTime := 8 * time.Millisecond
@@ -132,10 +147,12 @@ func openglWork() {
 		seconds := 0
 		for !window.ShouldClose() {
 			frames++
+			gl.Clear(gl.COLOR_BUFFER_BIT)
 
 			//Input function
 			func(window *glfw.Window, pos *mgl32.Vec3) {
 				var navigationSpeed float32 = 5.0 / 120
+				pressedShift := false
 
 				//Pressing space to exit
 				if window.GetKey(glfw.KeySpace) == glfw.Press {
@@ -156,30 +173,76 @@ func openglWork() {
 				} else if window.GetKey(glfw.KeyD) == glfw.Press {
 					pos[0] += navigationSpeed
 				}
+				//Wave variable editing
+				if window.GetKey(glfw.KeyLeftShift) == glfw.Press {
+					pressedShift = true
+				}
+				if window.GetKey(glfw.KeyX) == glfw.Press {
+					if pressedShift {
+						weightX -= 0.01
+					} else {
+						weightX += 0.01
+					}
+				}
+				if window.GetKey(glfw.KeyY) == glfw.Press {
+					if pressedShift {
+						weightY -= 0.01
+					} else {
+						weightY += 0.01
+					}
+				}
+				if window.GetKey(glfw.KeyZ) == glfw.Press {
+					if pressedShift {
+						weightZ -= 0.01
+					} else {
+						weightZ += 0.01
+					}
+				}
+				if window.GetKey(glfw.KeyP) == glfw.Press {
+					if pressedShift {
+						period *= 1.01
+					} else {
+						period /= 1.01
+					}
+				}
+				if window.GetKey(glfw.KeyM) == glfw.Press {
+					if pressedShift {
+						amplitude -= 0.01
+					} else {
+						amplitude += 0.01
+					}
+				}
 			}(window, &playerPos)
 
-			//Alter the spectator position
 			camera := mgl32.LookAtV(playerPos, playerPos.Add(mgl32.Vec3{0, -1, -3}), mgl32.Vec3{0, 1, 0})
-			gl.UniformMatrix4fv(cameraUniform, 1, false, &camera[0])
 
 			//Rotate the cube
 			/*
-				totalTime := float32(time.Since(t0)) / float32(time.Second)
-				model = mgl32.HomogRotate3D(totalTime*math.Pi/4, mgl32.Vec3{1, 1, -1}.Normalize())
+			totalTime := float32(time.Since(t0)) / float32(time.Second)
+			model = mgl32.HomogRotate3D(totalTime*math.Pi/4, mgl32.Vec3{1, 1, -1}.Normalize())
 			*/
-			gl.Clear(gl.COLOR_BUFFER_BIT)
 
+			//Update uniform variables
+			gl.UniformMatrix4fv(cameraUniform, 1, false, &camera[0])
 			gl.Uniform1f(timeUniform, float32(time.Since(t0)))
 			gl.UniformMatrix4fv(modelUniform, 1, false, &model[0])
+			//Update wave uniforms
+			gl.Uniform1f(amplitudeUniform, amplitude)
+			gl.Uniform1f(weightXUniform, weightX)
+			gl.Uniform1f(weightYUniform, weightY)
+			gl.Uniform1f(weightZUniform, weightZ)
+			gl.Uniform1f(periodUniform, period)
+
 			gl.DrawElements(gl.TRIANGLES, int32(len(elements)), gl.UNSIGNED_INT, gl.PtrOffset(0))
+
 			time.Sleep(frameTime - time.Since(startTime))
 			if int(time.Since(t0)/time.Second) > seconds {
 				seconds++
 				fmt.Println("FPS:", frames)
 				frames = 0
 			}
-
 			startTime = time.Now()
+
 			window.SwapBuffers()
 			glfw.PollEvents()
 		}
