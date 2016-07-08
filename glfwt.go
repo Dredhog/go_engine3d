@@ -39,13 +39,14 @@ var elements = []uint32{
 const (
 	screenWidth  = 1920
 	screenHeight = 1080
+	FPS          = 122
 )
 
 // OpenglWork is responsible for everything drawn in the window context
 func openglWork() {
 
 	//Generate the mesh
-	vertices, elements, _ = mesh.GeneratePlane(50, 50)
+	vertices, elements, _ = mesh.GeneratePlane(20, 20, 10, 10)
 
 	//Set up glfw
 	if err := glfw.Init(); err != nil {
@@ -79,7 +80,7 @@ func openglWork() {
 
 	gl.UseProgram(shaderProgram)
 
-	//Create the vertex vao
+	//Create the vertex array object
 	var vao uint32
 	gl.GenVertexArrays(1, &vao)
 	gl.BindVertexArray(vao)
@@ -109,7 +110,7 @@ func openglWork() {
 
 	//Uniform variables
 	projectionUniform := gl.GetUniformLocation(shaderProgram, gl.Str("projection\x00"))
-	projection := mgl32.Perspective(math.Pi/4, 1.6, 0.0, 10.0)
+	projection := mgl32.Perspective(math.Pi/4, 1.6, 0.1, 100.0)
 	gl.UniformMatrix4fv(projectionUniform, 1, false, &projection[0])
 
 	cameraUniform := gl.GetUniformLocation(shaderProgram, gl.Str("camera\x00"))
@@ -135,23 +136,23 @@ func openglWork() {
 		/*
 			gl.Enable(gl.CULL_FACE)
 			gl.CullFace(gl.BACK)
-			gl.Enable(gl.DEPTH_TEST)
-			gl.DepthFunc(gl.LESS)
 		*/
+		gl.Enable(gl.DEPTH_TEST)
+		gl.DepthFunc(gl.LESS)
 		model := mgl32.Ident4()
-		playerPos := mgl32.Vec3{0, 5, 0}
+		playerPos := mgl32.Vec3{10, 10, 35}
 		t0 := time.Now()
 		startTime := t0
-		frameTime := 8 * time.Millisecond
+		frameTime := time.Second / FPS
 		frames := 0
 		seconds := 0
 		for !window.ShouldClose() {
 			frames++
-			gl.Clear(gl.COLOR_BUFFER_BIT)
+			gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 
 			//Input function
 			func(window *glfw.Window, pos *mgl32.Vec3) {
-				var navigationSpeed float32 = 5.0 / 120
+				var navigationSpeed float32 = 5.0 / FPS
 				pressedShift := false
 
 				//Pressing space to exit
@@ -218,15 +219,15 @@ func openglWork() {
 
 			//Rotate the cube
 			/*
-			totalTime := float32(time.Since(t0)) / float32(time.Second)
-			model = mgl32.HomogRotate3D(totalTime*math.Pi/4, mgl32.Vec3{1, 1, -1}.Normalize())
+				totalTime := float32(time.Since(t0)) / float32(time.Second)
+				model = mgl32.HomogRotate3D(totalTime*math.Pi/4, mgl32.Vec3{1, 1, -1}.Normalize())
 			*/
 
-			//Update uniform variables
+			//Update uniform values
 			gl.UniformMatrix4fv(cameraUniform, 1, false, &camera[0])
 			gl.Uniform1f(timeUniform, float32(time.Since(t0)))
 			gl.UniformMatrix4fv(modelUniform, 1, false, &model[0])
-			//Update wave uniforms
+			//Update wave uniforms inside shader
 			gl.Uniform1f(amplitudeUniform, amplitude)
 			gl.Uniform1f(weightXUniform, weightX)
 			gl.Uniform1f(weightYUniform, weightY)
@@ -247,4 +248,5 @@ func openglWork() {
 			glfw.PollEvents()
 		}
 	}(window, shaderProgram, modelUniform)
+
 }
