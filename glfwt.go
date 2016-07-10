@@ -46,7 +46,7 @@ const (
 func openglWork() {
 
 	//Generate the mesh
-	vertices, elements, _ = mesh.GeneratePlane(20, 20, 10, 10)
+	vertices, elements, _ = mesh.GeneratePlane(10, 10, 20, 5)
 
 	//Set up glfw
 	if err := glfw.Init(); err != nil {
@@ -140,7 +140,7 @@ func openglWork() {
 		gl.Enable(gl.DEPTH_TEST)
 		gl.DepthFunc(gl.LESS)
 		model := mgl32.Ident4()
-		playerPos := mgl32.Vec3{10, 10, 35}
+		playerPos := mgl32.Vec3{5, 5, 18}
 		t0 := time.Now()
 		startTime := t0
 		frameTime := time.Second / FPS
@@ -248,5 +248,4 @@ func openglWork() {
 			glfw.PollEvents()
 		}
 	}(window, shaderProgram, modelUniform)
-
 }
