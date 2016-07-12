@@ -23,9 +23,9 @@ void main()
 {
 	
 	Color = color;
-	vec4 waved_position = vec4(position.x, _amplitude * sin( position.x*_weightX + position.y*_weightY + position.z*_weightZ + time/_period), position.z, 1.0);
+	//vec4 waved_position = vec4(position.x, _amplitude * sin( position.x*_weightX + position.y*_weightY + position.z*_weightZ + time/_period), position.z, 1.0);
 	
-	gl_Position = projection * camera * model * waved_position;
+	gl_Position = projection * camera * model * vec4(position, 1.0);
 }
 ` + "\x00"
 

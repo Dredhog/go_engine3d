@@ -6,7 +6,7 @@ import (
 	"math"
 	"time"
 
-	"training/glfwt/mesh"
+	"training/glfwt/obj"
 
 	"github.com/go-gl/gl/v4.1-core/gl"
 	"github.com/go-gl/glfw/v3.1/glfw"
@@ -46,7 +46,7 @@ const (
 func openglWork() {
 
 	//Generate the mesh
-	vertices, elements, _ = mesh.GeneratePlane(10, 10, 20, 5)
+	vertices, elements = obj.ParseFile("male_rabbit_fist_l0.obj", false, true)
 
 	//Set up glfw
 	if err := glfw.Init(); err != nil {
@@ -140,7 +140,7 @@ func openglWork() {
 		gl.Enable(gl.DEPTH_TEST)
 		gl.DepthFunc(gl.LESS)
 		model := mgl32.Ident4()
-		playerPos := mgl32.Vec3{5, 5, 18}
+		playerPos := mgl32.Vec3{0, 0, 5}
 		t0 := time.Now()
 		startTime := t0
 		frameTime := time.Second / FPS
@@ -215,13 +215,11 @@ func openglWork() {
 				}
 			}(window, &playerPos)
 
-			camera := mgl32.LookAtV(playerPos, playerPos.Add(mgl32.Vec3{0, -1, -3}), mgl32.Vec3{0, 1, 0})
+			camera := mgl32.LookAtV(playerPos, playerPos.Add(mgl32.Vec3{0, 0, -3}), mgl32.Vec3{0, 1, 0})
 
 			//Rotate the cube
-			/*
 				totalTime := float32(time.Since(t0)) / float32(time.Second)
-				model = mgl32.HomogRotate3D(totalTime*math.Pi/4, mgl32.Vec3{1, 1, -1}.Normalize())
-			*/
+				model = mgl32.HomogRotate3D(totalTime*math.Pi/4, mgl32.Vec3{0, 1, 0}.Normalize())
 
 			//Update uniform values
 			gl.UniformMatrix4fv(cameraUniform, 1, false, &camera[0])
