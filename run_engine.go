@@ -13,40 +13,17 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 )
 
-var vertices = []float32{
-	//Front face
-	1.0, 1.0, 1.0, 1.0, 0.0, 1.0,
-	-1.0, 1.0, 1.0, 0.0, 0.0, 1.0,
-	-1.0, -1.0, 1.0, 0.0, 0.0, 0.0,
-	1.0, -1.0, 1.0, 1.0, 0.0, 0.0,
-
-	//Back face
-	1.0, 1.0, -1.0, 1.0, 1.0, 1.0,
-	-1.0, 1.0, -1.0, 0.0, 1.0, 1.0,
-	-1.0, -1.0, -1.0, 0.0, 1.0, 0.0,
-	1.0, -1.0, -1.0, 1.0, 1.0, 0.0,
-}
-
-var elements = []uint32{
-	0, 1, 2, 3,
-	7, 6, 5, 4,
-	0, 4, 5, 1,
-	1, 5, 6, 2,
-	4, 0, 3, 7,
-	2, 6, 7, 3,
-}
-
 const (
-	screenWidth  = 1920
-	screenHeight = 1080
-	FPS          = 122
+	screenWidth  = 1024
+	screenHeight = 768
+	fps          = 122
 )
 
 // OpenglWork is responsible for everything drawn in the window context
 func runEngine() {
 
 	//Generate the mesh
-	vertices, elements = obj_reader.ParseFile("male_rabbit_fist_l0.obj", false, true)
+	vertices, elements := obj_reader.ParseFile("male_rabbit_fist_l0.obj", false, true)
 
 	//Set up glfw
 	if err := glfw.Init(); err != nil {
@@ -59,7 +36,7 @@ func runEngine() {
 	glfw.WindowHint(glfw.ContextVersionMinor, 1)
 	glfw.WindowHint(glfw.OpenGLProfile, glfw.OpenGLCoreProfile)
 	glfw.WindowHint(glfw.OpenGLForwardCompatible, glfw.True)
-	window, err := glfw.CreateWindow(screenWidth, screenHeight, "Opengl", glfw.GetPrimaryMonitor(), nil)
+	window, err := glfw.CreateWindow(screenWidth, screenHeight, "Opengl", nil, nil)
 	if err != nil {
 		panic(err)
 	}
@@ -104,140 +81,58 @@ func runEngine() {
 	gl.EnableVertexAttribArray(posAttrib)
 	gl.ClearColor(0.8, 0.8, 1.0, 1.0)
 
-	colAttrib := uint32(gl.GetAttribLocation(shaderProgram, gl.Str("color\x00")))
-	gl.VertexAttribPointer(colAttrib, 3, gl.FLOAT, false, 6*4, gl.PtrOffset(3*4))
-	gl.EnableVertexAttribArray(colAttrib)
-
-	//Uniform variables
-	projectionUniform := gl.GetUniformLocation(shaderProgram, gl.Str("projection\x00"))
-	projection := mgl32.Perspective(math.Pi/4, 1.6, 0.1, 100.0)
-	gl.UniformMatrix4fv(projectionUniform, 1, false, &projection[0])
-
-	cameraUniform := gl.GetUniformLocation(shaderProgram, gl.Str("camera\x00"))
-	modelUniform := gl.GetUniformLocation(shaderProgram, gl.Str("model\x00"))
-	timeUniform := gl.GetUniformLocation(shaderProgram, gl.Str("time\x00"))
-
-	//Uniform variables for waves
-	amplitudeUniform := gl.GetUniformLocation(shaderProgram, gl.Str("_amplitude\x00"))
-	weightXUniform := gl.GetUniformLocation(shaderProgram, gl.Str("_weightX\x00"))
-	weightYUniform := gl.GetUniformLocation(shaderProgram, gl.Str("_weightY\x00"))
-	weightZUniform := gl.GetUniformLocation(shaderProgram, gl.Str("_weightZ\x00"))
-	periodUniform := gl.GetUniformLocation(shaderProgram, gl.Str("_period\x00"))
-
-	//Backing varaibles for wave uniforms
-	amplitude := float32(0.1)
-	weightX := float32(0)
-	weightY := float32(0)
-	weightZ := float32(0)
-	period := float32(1000000000)
+	normalAttrib := uint32(gl.GetAttribLocation(shaderProgram, gl.Str("normal\x00")))
+	gl.VertexAttribPointer(normalAttrib, 3, gl.FLOAT, false, 6*4, gl.PtrOffset(3*4))
+	gl.EnableVertexAttribArray(normalAttrib)
 
 	//Game loop function
-	func(window *glfw.Window, shaderProgram uint32, modelUniform int32) {
-		/*
-			gl.Enable(gl.CULL_FACE)
-			gl.CullFace(gl.BACK)
-		*/
+	func(window *glfw.Window, shaderProgram uint32) {
+		gl.Enable(gl.CULL_FACE)
+		gl.CullFace(gl.BACK)
 		gl.Enable(gl.DEPTH_TEST)
 		gl.DepthFunc(gl.LESS)
-		model := mgl32.Ident4()
-		playerPos := mgl32.Vec3{0, 0, 5}
+
+		//Declare uniform variables
+		mvpUniform := gl.GetUniformLocation(shaderProgram, gl.Str("mvp_mat\x00"))
+		modelUniform := gl.GetUniformLocation(shaderProgram, gl.Str("model_mat\x00"))
+		lightPosUniform := gl.GetUniformLocation(shaderProgram, gl.Str("light_position\x00"))
+
+		projection := mgl32.Perspective(math.Pi/4, 1.6, 0.1, 100.0)
+		playerPos := mgl32.Vec3{0, 1, 5}
+		lightPos := mgl32.Vec3{0, 10, 0}
+		_ = lightPos
 		t0 := time.Now()
 		startTime := t0
-		frameTime := time.Second / FPS
+		frameTime := time.Second / fps
 		frames := 0
 		seconds := 0
 		for !window.ShouldClose() {
 			frames++
-			gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 
-			//Input function
-			func(window *glfw.Window, pos *mgl32.Vec3) {
-				var navigationSpeed float32 = 5.0 / FPS
-				pressedShift := false
-
-				//Pressing space to exit
-				if window.GetKey(glfw.KeySpace) == glfw.Press {
-					window.SetShouldClose(true)
-				}
-				//Pressing enter to exit
-				if window.GetKey(glfw.KeyEnter) == glfw.Press {
-					window.SetShouldClose(true)
-				}
-				//First person motion
-				if window.GetKey(glfw.KeyW) == glfw.Press {
-					pos[2] -= navigationSpeed
-				} else if window.GetKey(glfw.KeyS) == glfw.Press {
-					pos[2] += navigationSpeed
-				}
-				if window.GetKey(glfw.KeyA) == glfw.Press {
-					pos[0] -= navigationSpeed
-				} else if window.GetKey(glfw.KeyD) == glfw.Press {
-					pos[0] += navigationSpeed
-				}
-				//Wave variable editing
-				if window.GetKey(glfw.KeyLeftShift) == glfw.Press {
-					pressedShift = true
-				}
-				if window.GetKey(glfw.KeyX) == glfw.Press {
-					if pressedShift {
-						weightX -= 0.01
-					} else {
-						weightX += 0.01
-					}
-				}
-				if window.GetKey(glfw.KeyY) == glfw.Press {
-					if pressedShift {
-						weightY -= 0.01
-					} else {
-						weightY += 0.01
-					}
-				}
-				if window.GetKey(glfw.KeyZ) == glfw.Press {
-					if pressedShift {
-						weightZ -= 0.01
-					} else {
-						weightZ += 0.01
-					}
-				}
-				if window.GetKey(glfw.KeyP) == glfw.Press {
-					if pressedShift {
-						period *= 1.01
-					} else {
-						period /= 1.01
-					}
-				}
-				if window.GetKey(glfw.KeyM) == glfw.Press {
-					if pressedShift {
-						amplitude -= 0.01
-					} else {
-						amplitude += 0.01
-					}
-				}
-			}(window, &playerPos)
+			handleInput(window, &playerPos, &lightPos)
 
 			camera := mgl32.LookAtV(playerPos, playerPos.Add(mgl32.Vec3{0, 0, -3}), mgl32.Vec3{0, 1, 0})
 
+			//Update the main viewport matrix
+			mvp := projection.Mul4(camera)
+
 			//Rotate the cube
 			totalTime := float32(time.Since(t0)) / float32(time.Second)
-			model = mgl32.HomogRotate3D(totalTime*math.Pi/4, mgl32.Vec3{0, 1, 0}.Normalize())
+			model := mgl32.HomogRotate3D(totalTime*math.Pi/4, mgl32.Vec3{0, 1, 0}.Normalize())
 
-			//Update uniform values
-			gl.UniformMatrix4fv(cameraUniform, 1, false, &camera[0])
-			gl.Uniform1f(timeUniform, float32(time.Since(t0)))
+			//Upload unifrom variables
+			gl.UniformMatrix4fv(mvpUniform, 1, false, &mvp[0])
 			gl.UniformMatrix4fv(modelUniform, 1, false, &model[0])
-			//Update wave uniforms inside shader
-			gl.Uniform1f(amplitudeUniform, amplitude)
-			gl.Uniform1f(weightXUniform, weightX)
-			gl.Uniform1f(weightYUniform, weightY)
-			gl.Uniform1f(weightZUniform, weightZ)
-			gl.Uniform1f(periodUniform, period)
+			gl.Uniform3f(lightPosUniform, lightPos[0], lightPos[1], lightPos[2])
 
+			gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
+			//gl.DrawArrays(gl.TRIANGLES, 0, int32(len(vertices)))
 			gl.DrawElements(gl.TRIANGLES, int32(len(elements)), gl.UNSIGNED_INT, gl.PtrOffset(0))
 
 			time.Sleep(frameTime - time.Since(startTime))
 			if int(time.Since(t0)/time.Second) > seconds {
 				seconds++
-				fmt.Println("FPS:", frames)
+				fmt.Println("fps:", frames)
 				frames = 0
 			}
 			startTime = time.Now()
@@ -245,5 +140,38 @@ func runEngine() {
 			window.SwapBuffers()
 			glfw.PollEvents()
 		}
-	}(window, shaderProgram, modelUniform)
+	}(window, shaderProgram)
+}
+
+//Input function
+func handleInput(window *glfw.Window, playerPos *mgl32.Vec3, lightPos *mgl32.Vec3) {
+	var navigationSpeed float32 = 5.0 / fps
+
+	//Pressing space to exit
+	if window.GetKey(glfw.KeySpace) == glfw.Press ||
+		window.GetKey(glfw.KeyEnter) == glfw.Press {
+		window.SetShouldClose(true)
+	}
+	//First person motion
+	if window.GetKey(glfw.KeyW) == glfw.Press {
+		playerPos[2] -= navigationSpeed
+	} else if window.GetKey(glfw.KeyS) == glfw.Press {
+		playerPos[2] += navigationSpeed
+	}
+	if window.GetKey(glfw.KeyA) == glfw.Press {
+		playerPos[0] -= navigationSpeed
+	} else if window.GetKey(glfw.KeyD) == glfw.Press {
+		playerPos[0] += navigationSpeed
+	}
+	//light motion
+	if window.GetKey(glfw.KeyUp) == glfw.Press {
+		lightPos[2] -= 2 * navigationSpeed
+	} else if window.GetKey(glfw.KeyDown) == glfw.Press {
+		lightPos[2] += 2 * navigationSpeed
+	}
+	if window.GetKey(glfw.KeyLeft) == glfw.Press {
+		lightPos[0] -= 2 * navigationSpeed
+	} else if window.GetKey(glfw.KeyRight) == glfw.Press {
+		lightPos[0] += 2 * navigationSpeed
+	}
 }
