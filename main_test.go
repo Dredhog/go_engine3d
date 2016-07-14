@@ -9,5 +9,5 @@ func init() {
 	runtime.LockOSThread()
 }
 func TestMain(t *testing.T) {
-	openglWork()
+	runEngine()
 }

@@ -6,7 +6,7 @@ import (
 	"math"
 	"time"
 
-	"training/glfwt/obj"
+	"training/engine/parse/obj"
 
 	"github.com/go-gl/gl/v4.1-core/gl"
 	"github.com/go-gl/glfw/v3.1/glfw"
@@ -43,10 +43,10 @@ const (
 )
 
 // OpenglWork is responsible for everything drawn in the window context
-func openglWork() {
+func runEngine() {
 
 	//Generate the mesh
-	vertices, elements = obj.ParseFile("male_rabbit_fist_l0.obj", false, true)
+	vertices, elements = obj_reader.ParseFile("male_rabbit_fist_l0.obj", false, true)
 
 	//Set up glfw
 	if err := glfw.Init(); err != nil {
@@ -218,8 +218,8 @@ func openglWork() {
 			camera := mgl32.LookAtV(playerPos, playerPos.Add(mgl32.Vec3{0, 0, -3}), mgl32.Vec3{0, 1, 0})
 
 			//Rotate the cube
-				totalTime := float32(time.Since(t0)) / float32(time.Second)
-				model = mgl32.HomogRotate3D(totalTime*math.Pi/4, mgl32.Vec3{0, 1, 0}.Normalize())
+			totalTime := float32(time.Since(t0)) / float32(time.Second)
+			model = mgl32.HomogRotate3D(totalTime*math.Pi/4, mgl32.Vec3{0, 1, 0}.Normalize())
 
 			//Update uniform values
 			gl.UniformMatrix4fv(cameraUniform, 1, false, &camera[0])

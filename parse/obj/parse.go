@@ -1,4 +1,4 @@
-package obj
+package obj_reader
 
 import (
 	"bufio"
