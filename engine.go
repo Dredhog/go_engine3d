@@ -5,8 +5,7 @@ import (
 	"log"
 	"math"
 	"time"
-
-	"training/engine/parse/obj"
+	"training/engine/anim"
 
 	"github.com/go-gl/gl/v4.1-core/gl"
 	"github.com/go-gl/glfw/v3.1/glfw"
@@ -14,16 +13,66 @@ import (
 )
 
 const (
-	screenWidth  = 1024
+	screenWidth  = 768
 	screenHeight = 768
-	fps          = 122
+	fps          = 1200
 )
+
+var vertices = []float32{
+	0.1, 0, 0, //position
+	0, 0.1, 0, //rotation
+	1, 0, 0, //color
+	0, 0, //bones
+	0.2, 0.8, //weights
+
+	-0.1, 0, 0, //position
+	0, 0, 0, //rotation
+	1, 0, 0, //color
+	0, 0, //bones
+	0.2, 0.8, //weights
+
+	0.1, 0.5, 0, //position
+	0, 0, 0, //rotation
+	0, 1, 0, //color
+	1, 0, //bones
+	0.2, 0.8, //weights
+
+	-0.1, 0.5, 0, //position
+	0, 0, 0, //rotation
+	0, 1, 0, //color
+	1, 0, //bones
+	0.2, 0.8, //weights
+
+	0.1, 0.8, 0, //position
+	0, 0, 0, //rotation
+	0, 0, 1, //color
+	2, 2, //bones
+	0.2, 0.8, //weights
+
+	-0.1, 0.8, 0, //position
+	0, 0, 0, //rotation
+	0, 0, 1, //color
+	2, 2, //bones
+	0.2, 0.8, //weights
+}
+var elements []uint32 = []uint32{
+	0, 1,
+	3, 5,
+	4, 2,
+	0,
+}
 
 // OpenglWork is responsible for everything drawn in the window context
 func runEngine() {
 
-	//Generate the mesh
-	vertices, elements := obj_reader.ParseFile("male_rabbit_fist_l0.obj", false, true)
+	//---------------------------------ANIMATION---------------------------------
+	crane := anim.NewSkeleton(3)
+	crane.Bones[0] = anim.Bone{Name: "root", ToRoot: anim.Transform{mgl32.Vec3{1, 1, 1}, [3]float32{0, 0, 0}, [3]float32{0, 0, 0}}}
+	crane.Bones[1] = anim.Bone{Name: "neck", ToRoot: anim.Transform{mgl32.Vec3{1, 1, 1}, mgl32.Vec3{0, -0.5, 0}, mgl32.Vec3{}}, Index: 1, ParentIndex: 0}
+	crane.Bones[2] = anim.Bone{Name: "head", ToRoot: anim.Transform{mgl32.Vec3{1, 1, 1}, mgl32.Vec3{0, -0.8, 0}, mgl32.Vec3{}}, Index: 2, ParentIndex: 1}
+	//---------------------------------------------------------------------------
+
+	//vertices, elements := obj_reader.ParseFile("dust2x2/dust2x2.obj", false, true)
 
 	//Set up glfw
 	if err := glfw.Init(); err != nil {
@@ -77,18 +126,26 @@ func runEngine() {
 	//Link the vertex attributes to the variables
 	//And vertex data in the vbo
 	posAttrib := uint32(gl.GetAttribLocation(shaderProgram, gl.Str("position\x00")))
-	gl.VertexAttribPointer(posAttrib, 3, gl.FLOAT, false, 6*4, gl.PtrOffset(0))
+	gl.VertexAttribPointer(posAttrib, 3, gl.FLOAT, false, 13*4, gl.PtrOffset(0))
 	gl.EnableVertexAttribArray(posAttrib)
 	gl.ClearColor(0.8, 0.8, 1.0, 1.0)
 
 	normalAttrib := uint32(gl.GetAttribLocation(shaderProgram, gl.Str("normal\x00")))
-	gl.VertexAttribPointer(normalAttrib, 3, gl.FLOAT, false, 6*4, gl.PtrOffset(3*4))
+	gl.VertexAttribPointer(normalAttrib, 3, gl.FLOAT, false, 13*4, gl.PtrOffset(3*4))
 	gl.EnableVertexAttribArray(normalAttrib)
+
+	boneIndiceAttrib := uint32(gl.GetAttribLocation(shaderProgram, gl.Str("bones\x00")))
+	gl.VertexAttribPointer(boneIndiceAttrib, 2, gl.FLOAT, false, 13*4, gl.PtrOffset(9*4))
+	gl.EnableVertexAttribArray(boneIndiceAttrib)
+
+	boneWeightAttrib := uint32(gl.GetAttribLocation(shaderProgram, gl.Str("weights\x00")))
+	gl.VertexAttribPointer(boneWeightAttrib, 2, gl.FLOAT, false, 13*4, gl.PtrOffset(11*4))
+	gl.EnableVertexAttribArray(boneWeightAttrib)
 
 	//Game loop function
 	func(window *glfw.Window, shaderProgram uint32) {
-		gl.Enable(gl.CULL_FACE)
-		gl.CullFace(gl.BACK)
+		//gl.Enable(gl.CULL_FACE)
+		//gl.CullFace(gl.BACK)
 		gl.Enable(gl.DEPTH_TEST)
 		gl.DepthFunc(gl.LESS)
 
@@ -96,22 +153,26 @@ func runEngine() {
 		mvpUniform := gl.GetUniformLocation(shaderProgram, gl.Str("mvp_mat\x00"))
 		modelUniform := gl.GetUniformLocation(shaderProgram, gl.Str("model_mat\x00"))
 		lightPosUniform := gl.GetUniformLocation(shaderProgram, gl.Str("light_position\x00"))
+		boneUniforms := gl.GetUniformLocation(shaderProgram, gl.Str("bone_mat\x00"))
 
 		projection := mgl32.Perspective(math.Pi/4, 1.6, 0.1, 100.0)
-		playerPos := mgl32.Vec3{0, 1, 5}
+		playerPos := mgl32.Vec3{0, 1, 2}
 		lightPos := mgl32.Vec3{0, 10, 0}
-		_ = lightPos
+		angle0 := float32(0)
+		angle1 := float32(0)
+		angle2 := float32(0)
 		t0 := time.Now()
 		startTime := t0
 		frameTime := time.Second / fps
 		frames := 0
 		seconds := 0
+
 		for !window.ShouldClose() {
 			frames++
 
-			handleInput(window, &playerPos, &lightPos)
+			handleInput(window, &playerPos, &lightPos, &angle0, &angle1, &angle2)
 
-			camera := mgl32.LookAtV(playerPos, playerPos.Add(mgl32.Vec3{0, 0, -3}), mgl32.Vec3{0, 1, 0})
+			camera := mgl32.LookAtV(playerPos, playerPos.Add(mgl32.Vec3{0, -0.5, -3}), mgl32.Vec3{0, 1, 0})
 
 			//Update the main viewport matrix
 			mvp := projection.Mul4(camera)
@@ -119,20 +180,28 @@ func runEngine() {
 			//Rotate the cube
 			totalTime := float32(time.Since(t0)) / float32(time.Second)
 			model := mgl32.HomogRotate3D(totalTime*math.Pi/4, mgl32.Vec3{0, 1, 0}.Normalize())
+			crane.CalculateFinalTransformations(anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, angle0}}, anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, angle1}}, anim.Transform{mgl32.Vec3{1, 1, 1}, mgl32.Vec3{}, mgl32.Vec3{0, 0, angle2}})
 
 			//Upload unifrom variables
 			gl.UniformMatrix4fv(mvpUniform, 1, false, &mvp[0])
 			gl.UniformMatrix4fv(modelUniform, 1, false, &model[0])
 			gl.Uniform3f(lightPosUniform, lightPos[0], lightPos[1], lightPos[2])
+			gl.UniformMatrix4fv(boneUniforms, 3, false, &crane.FinalTransforms[0][0])
 
 			gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 			//gl.DrawArrays(gl.TRIANGLES, 0, int32(len(vertices)))
-			gl.DrawElements(gl.TRIANGLES, int32(len(elements)), gl.UNSIGNED_INT, gl.PtrOffset(0))
+			gl.DrawElements(gl.LINE_STRIP, int32(len(elements)), gl.UNSIGNED_INT, gl.PtrOffset(0))
 
 			time.Sleep(frameTime - time.Since(startTime))
 			if int(time.Since(t0)/time.Second) > seconds {
 				seconds++
 				fmt.Println("fps:", frames)
+				fmt.Println("Angle1: ", angle1)
+				fmt.Println("Angle2: ", angle2)
+				fmt.Println("LocalTransforms")
+				fmt.Println(crane.LocalTransforms)
+				fmt.Println("FinalTransforms")
+				fmt.Println(crane.FinalTransforms)
 				frames = 0
 			}
 			startTime = time.Now()
@@ -144,7 +213,7 @@ func runEngine() {
 }
 
 //Input function
-func handleInput(window *glfw.Window, playerPos *mgl32.Vec3, lightPos *mgl32.Vec3) {
+func handleInput(window *glfw.Window, playerPos *mgl32.Vec3, lightPos *mgl32.Vec3, angle0, angle1, angle2 *float32) {
 	var navigationSpeed float32 = 5.0 / fps
 
 	//Pressing space to exit
@@ -166,12 +235,21 @@ func handleInput(window *glfw.Window, playerPos *mgl32.Vec3, lightPos *mgl32.Vec
 	//light motion
 	if window.GetKey(glfw.KeyUp) == glfw.Press {
 		lightPos[2] -= 2 * navigationSpeed
+		*angle1 += 50 * navigationSpeed
 	} else if window.GetKey(glfw.KeyDown) == glfw.Press {
 		lightPos[2] += 2 * navigationSpeed
+		*angle1 -= 50 * navigationSpeed
 	}
 	if window.GetKey(glfw.KeyLeft) == glfw.Press {
 		lightPos[0] -= 2 * navigationSpeed
+		*angle2 -= 50 * navigationSpeed
 	} else if window.GetKey(glfw.KeyRight) == glfw.Press {
 		lightPos[0] += 2 * navigationSpeed
+		*angle2 += 50 * navigationSpeed
+	}
+	if window.GetKey(glfw.Key0) == glfw.Press {
+		*angle0 -= 50 * navigationSpeed
+	} else if window.GetKey(glfw.Key1) == glfw.Press {
+		*angle0 += 50 * navigationSpeed
 	}
 }
