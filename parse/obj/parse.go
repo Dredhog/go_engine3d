@@ -1,11 +1,16 @@
-package obj_reader
+package obj
 
 import (
 	"bufio"
 	"os"
+	"runtime"
 	"strconv"
 	"strings"
 )
+
+func init(){
+	runtime.LockOSThread()
+}
 
 func check(err error) {
 	if err != nil {
@@ -27,7 +32,7 @@ func ParseFile(fileName string, useT, useN bool) (floats []float32, indices []ui
 	relativePath, err := os.Getwd()
 	check(err)
 
-	file, err := os.Open(relativePath + "/data/" + fileName)
+	file, err := os.Open(relativePath + "/data/models/" + fileName)
 	check(err)
 	defer file.Close()
 
