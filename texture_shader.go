@@ -24,7 +24,7 @@ func newProgram(fileName string) (uint32, error) {
 	if err != nil{
 		return 0, fmt.Errorf("shader: vertex file read error: %v", err)
 	}
-	vertexShader, err := compileShader(string(vertexSourceBytes), gl.VERTEX_SHADER)
+	vertexShader, err := compileShader(string(vertexSourceBytes) + "\x00", gl.VERTEX_SHADER)
 	if err != nil {
 		return 0, fmt.Errorf("shader: vertex compilation error: %v", err)
 	}
@@ -34,7 +34,7 @@ func newProgram(fileName string) (uint32, error) {
 	if err != nil{
 		return 0, fmt.Errorf("shader: fragment file read error: %v", err)
 	}
-	fragmentShader, err := compileShader(string(fragmentSourceBytes), gl.FRAGMENT_SHADER)
+	fragmentShader, err := compileShader(string(fragmentSourceBytes) + "\x00", gl.FRAGMENT_SHADER)
 	if err != nil {
 		return 0, fmt.Errorf("shader: fragment compilation error: %v", err)
 	}

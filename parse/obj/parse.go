@@ -3,14 +3,9 @@ package obj
 import (
 	"bufio"
 	"os"
-	"runtime"
 	"strconv"
 	"strings"
 )
-
-func init(){
-	runtime.LockOSThread()
-}
 
 func check(err error) {
 	if err != nil {
