@@ -27,7 +27,7 @@ func ParseFile(fileName string, useT, useN bool) (floats []float32, indices []ui
 	relativePath, err := os.Getwd()
 	check(err)
 
-	file, err := os.Open(relativePath + "/data/models/" + fileName)
+	file, err := os.Open(relativePath + "/data/mesh/" + fileName)
 	check(err)
 	defer file.Close()
 

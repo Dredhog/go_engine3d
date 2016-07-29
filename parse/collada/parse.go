@@ -1,31 +1,38 @@
 package collada
 
 import (
-	"fmt"
 	"encoding/xml"
-	"os"
+	"fmt"
 	"io/ioutil"
+	"os"
 )
-func Parse (fileName string) (error){
+
+func Parse(fileName string) (collada, error) {
 	relativePath, err := os.Getwd()
-	if err != nil{
-		return fmt.Errorf("parse collada: realative path read error: %v", err)
+	if err != nil {
+		return nil, fmt.Errorf("parse collada: realative path read error: %v", err)
 	}
 
 	//Read entire collada file
-	colladaBytes, err := ioutil.ReadFile(relativePath + "/../../../data/models/" + fileName)
-	if err != nil{
-		return fmt.Errorf("parse collada: %v", err)
+	colladaBytes, err := ioutil.ReadFile(relativePath + "/../../data/model/" + fileName)
+	if err != nil {
+		return nil, fmt.Errorf("parse collada: %v", err)
 	}
 	var collada collada
-	if err := xml.Unmarshal(colladaBytes, &collada); err != nil{
-		return fmt.Errorf("parse collada: %v", err)
+	if err := xml.Unmarshal(colladaBytes, &collada); err != nil {
+		return nil, fmt.Errorf("parse collada: %v", err)
 	}
-	for _, sources := range collada.LibraryGeometries.Geometries[0].Meshes[0].Sources{
-		fmt.Println(sources)
+	for _, v := range collada.LibraryGeometries.Geometries[0].Meshes[0].Sources {
+		fmt.Printf("%#v\n", v)
 	}
-	fmt.Printf("%#v\n", collada.LibraryGeometries.Geometries[0].Meshes[0])
-	return nil
+	return collada, nil
+}
+
+func ColladaToMesh(fileName string) ([]float32, []uint32) {
+	collada, err = Parse(fileName)
+	if err != nil {
+		return nil, nil, fmt.Errorf("Collada to mesh: conversion error %v", err)
+	}
 }
 
 var data = []byte(`

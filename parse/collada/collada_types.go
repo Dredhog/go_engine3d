@@ -16,13 +16,26 @@ type geometry struct {
 }
 
 type mesh struct {
-	Sources []source `xml:"source"`
-	Indices string   `xml:"polylist>p"`
+	Sources   []source   `xml:"source"`
+	Polylists []polylist `xml:"polylist"`
 }
 
 type source struct {
-	Id          string `xml:"id,attr"`
-	FloatArrays string `xml:"float_array"`
+	Id         string     `xml:"id,attr"`
+	FloatArray floatArray `xml:"float_array"`
+}
+
+type polylist struct {
+	Matterial string  `xml:"material,attr"`
+	count     string  `xml:"count,attr"`
+	Inputs    []input `xml:"input"`
+	P         string  `xml:"p"`
+}
+
+type input struct {
+	Semantic string `xml:"semantic,attr"`
+	Source   string `xml:"source,attr"`
+	Offset   string `xml:"offset,attr"`
 }
 
 type floatArray struct {

@@ -1,40 +1,36 @@
-package main
+package shader
 
 import (
 	"fmt"
-	"os"
-	"image"
-	"image/draw"
-	_ "image/jpeg"
-	_ "image/png"
 	"io/ioutil"
+	"os"
 	"strings"
 
 	"github.com/go-gl/gl/v4.1-core/gl"
 )
 
-func newProgram(fileName string) (uint32, error) {
+func NewProgram(fileName string) (uint32, error) {
 	relativePath, err := os.Getwd()
-	if err != nil{
+	if err != nil {
 		return 0, fmt.Errorf("shader: realative path read error: %v", err)
 	}
 
 	//Read vertex shader
 	vertexSourceBytes, err := ioutil.ReadFile(relativePath + "/shaders/" + fileName + ".vert")
-	if err != nil{
+	if err != nil {
 		return 0, fmt.Errorf("shader: vertex file read error: %v", err)
 	}
-	vertexShader, err := compileShader(string(vertexSourceBytes) + "\x00", gl.VERTEX_SHADER)
+	vertexShader, err := compileShader(string(vertexSourceBytes)+"\x00", gl.VERTEX_SHADER)
 	if err != nil {
 		return 0, fmt.Errorf("shader: vertex compilation error: %v", err)
 	}
 
 	//Read fragment shader
 	fragmentSourceBytes, err := ioutil.ReadFile(relativePath + "/shaders/" + fileName + ".frag")
-	if err != nil{
+	if err != nil {
 		return 0, fmt.Errorf("shader: fragment file read error: %v", err)
 	}
-	fragmentShader, err := compileShader(string(fragmentSourceBytes) + "\x00", gl.FRAGMENT_SHADER)
+	fragmentShader, err := compileShader(string(fragmentSourceBytes)+"\x00", gl.FRAGMENT_SHADER)
 	if err != nil {
 		return 0, fmt.Errorf("shader: fragment compilation error: %v", err)
 	}
@@ -83,49 +79,4 @@ func compileShader(source string, shaderType uint32) (uint32, error) {
 	}
 
 	return shader, nil
-}
-
-func newTexture(file string) (uint32, error) {
-	relativePath, err := os.Getwd()
-	if err != nil{
-		return 0, fmt.Errorf("texture: relative path error: %q", err)
-	}
-
-	imgFile, err := os.Open(relativePath + "/data/textures/" + file)
-	if err != nil {
-		return 0, fmt.Errorf("texture: %q not found on disk: %v", relativePath + "/data/textures/" + file, err)
-	}
-	defer imgFile.Close()
-
-	img, _, err := image.Decode(imgFile)
-	if err != nil {
-		return 0, err
-	}
-
-	rgba := image.NewRGBA(img.Bounds())
-	if rgba.Stride != rgba.Rect.Size().X*4 {
-		return 0, fmt.Errorf("unsupported stride")
-	}
-	draw.Draw(rgba, rgba.Bounds(), img, image.Point{0, 0}, draw.Src)
-
-	var texture uint32
-	gl.GenTextures(1, &texture)
-	gl.ActiveTexture(gl.TEXTURE0)
-	gl.BindTexture(gl.TEXTURE_2D, texture)
-	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR)
-	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR)
-	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE)
-	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
-	gl.TexImage2D(gl.TEXTURE_2D,
-			0,
-			gl.RGBA,
-			int32(rgba.Rect.Size().X),
-			int32(rgba.Rect.Size().Y),
-			0,
-			gl.RGBA,
-			gl.UNSIGNED_BYTE,
-			gl.Ptr(rgba.Pix))
-
-	gl.BindTexture(gl.TEXTURE_2D, 0)
-	return texture, nil
 }

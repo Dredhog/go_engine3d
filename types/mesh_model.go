@@ -1,30 +1,8 @@
-package main
+package types
 
-import (
-	"github.com/go-gl/gl/v4.1-core/gl"
-)
+import "github.com/go-gl/gl/v4.1-core/gl"
 
-type Vertex struct {
-	position [3]float32
-	normal   [3]float32
-	color	 [3]float32
-}
-
-type Texture struct {
-	id      uint32
-	texType string
-}
-
-type Mesh struct {
-	Vertices []float32
-	Indices  []uint32
-	Textures []Texture
-	VAO      uint32
-	VBO      uint32
-	EBO      uint32
-}
-
-func (m *Mesh) Init(vertices []float32, indices []uint32, textures []Texture){
+func (m *Mesh) Init(vertices []float32, indices []uint32, textures []Texture) {
 	m.Vertices = vertices
 	m.Indices = indices
 	m.Textures = textures
@@ -32,7 +10,7 @@ func (m *Mesh) Init(vertices []float32, indices []uint32, textures []Texture){
 	m.setUpMesh()
 }
 
-func (m *Mesh) setUpMesh(){
+func (m *Mesh) setUpMesh() {
 	gl.GenVertexArrays(1, &m.VAO)
 	gl.GenBuffers(1, &m.VBO)
 	gl.GenBuffers(1, &m.EBO)
@@ -54,22 +32,22 @@ func (m *Mesh) setUpMesh(){
 	//Vertex normals
 	gl.EnableVertexAttribArray(2)
 	gl.VertexAttribPointer(2, 3, gl.FLOAT, false, 8*4, gl.PtrOffset(5*4))
-/*
-	//Vertex bone indices
-	gl.EnableVertexAttribArray(2)
-	gl.VertexAttribPointer(2, 3, gl.FLOAT, false, 10*4, gl.PtrOffset(6*4))
-	//Vertex bone weights
-	gl.EnableVertexAttribArray(3)
-	gl.VertexAttribPointer(3, 3, gl.FLOAT, false, 10*4, gl.PtrOffset(8*4))
-*/
+	/*
+		//Vertex bone indices
+		gl.EnableVertexAttribArray(2)
+		gl.VertexAttribPointer(2, 3, gl.FLOAT, false, 10*4, gl.PtrOffset(6*4))
+		//Vertex bone weights
+		gl.EnableVertexAttribArray(3)
+		gl.VertexAttribPointer(3, 3, gl.FLOAT, false, 10*4, gl.PtrOffset(8*4))
+	*/
 
 	//Rebind default array object
 	gl.BindVertexArray(0)
 }
 
-func( m *Mesh) Draw(){
-	if len(m.Textures) > 0{
-		gl.BindTexture(gl.TEXTURE_2D, m.Textures[0].id)
+func (m *Mesh) Draw() {
+	if len(m.Textures) > 0 {
+		gl.BindTexture(gl.TEXTURE_2D, m.Textures[0].Id)
 	}
 	gl.BindVertexArray(m.VAO)
 	gl.DrawElements(gl.TRIANGLES, int32(len(m.Indices)), gl.UNSIGNED_INT, gl.PtrOffset(0))

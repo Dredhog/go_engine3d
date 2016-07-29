@@ -20,8 +20,7 @@ void main()
 	
 	//light surface bounce effect
 	float light_dot_normal = dot(normalize(light_position - Position), Normal);
-	float diffuse = light_dot_normal/2 + 0.5;
-	float diffuse_alfa = diffuse >= 0.05 ? diffuse : 0.05;
+	float diffuse_alfa = max(light_dot_normal, 0.2);
 
 	outColor = light_squared_norm * diffuse_alfa * texture(sampler_diffuse, TexCoord);  
 }

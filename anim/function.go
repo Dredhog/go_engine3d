@@ -30,7 +30,7 @@ func (s *Skeleton) CalculateFinalTransformations(transforms ...Transform) error 
 	for _, b := range s.Bones {
 		_ = CalcFinalTransform(&b, s)
 	}
-	for i := range s.Bones{
+	for i := range s.Bones {
 		s.Bones[i].FinalSet = false
 		s.Bones[i].LocalSet = false
 	}

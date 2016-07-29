@@ -7,7 +7,10 @@ import (
 	"runtime"
 	"time"
 	"training/engine/anim"
+	"training/engine/load/shader"
+	"training/engine/load/texture"
 	"training/engine/parse/obj"
+	"training/engine/types"
 
 	"github.com/go-gl/gl/v4.1-core/gl"
 	"github.com/go-gl/glfw/v3.1/glfw"
@@ -19,12 +22,13 @@ func init() {
 	// See documentation for functions that are only allowed to be called from the main thread.
 	runtime.LockOSThread()
 }
+
 const (
 	screenWidth  = 1920
 	screenHeight = 1080
 	fps          = 122
-	w = 25
-	h = 1
+	w            = 25
+	h            = 1
 )
 
 var vertices = []float32{
@@ -141,7 +145,7 @@ func main() {
 	arm.Bones[7] = anim.Bone{Name: "right_elbow   ", Index: 7, ParentIndex: 5, ToRoot: anim.Transform{[3]float32{1, 1, 1}, [3]float32{-0.4, 0, 0}, [3]float32{}}}
 	//---------------------------------------------------------------------------
 
-	vertices, elements := obj.ParseFile("rabbot.obj", true, true)
+	vertices, elements := obj.ParseFile("sebastian_ao.obj", true, true)
 
 	//Set up glfw
 	if err := glfw.Init(); err != nil {
@@ -168,7 +172,7 @@ func main() {
 	version := gl.GoStr(gl.GetString(gl.VERSION))
 	fmt.Println("OpenGL version", version)
 
-	shaderProgram, err := newProgram("diffuse_alfa")
+	shaderProgram, err := shader.NewProgram("diffuse_alfa")
 	if err != nil {
 		panic(err)
 	}
@@ -180,13 +184,13 @@ func main() {
 		gl.DepthFunc(gl.LESS)
 		gl.ClearColor(0.3, 0.3, 0.4, 1.0)
 
-		rabbitDiffuse, err := newTexture("rabbit.png")
+		rabbitDiffuse, err := texture.NewTexture("AO.png")
 		if err != nil {
 			panic(err)
 		}
 
-		var personMesh Mesh
-		personMesh.Init(vertices, elements, []Texture{{rabbitDiffuse, "DIFFUSE"}})
+		var personMesh types.Mesh
+		personMesh.Init(vertices, elements, []types.Texture{{rabbitDiffuse, "DIFFUSE"}})
 		//Get uniforms from shader
 		mvpUniform := gl.GetUniformLocation(shaderProgram, gl.Str("mvp_mat\x00"))
 		modelUniform := gl.GetUniformLocation(shaderProgram, gl.Str("model_mat\x00"))
@@ -195,7 +199,7 @@ func main() {
 
 		model := mgl32.Ident4()
 		projection := mgl32.Perspective(math.Pi/4, 1.6, 0.1, 100.0)
-		playerPos := mgl32.Vec3{0, 1, 2}
+		playerPos := mgl32.Vec3{0, 0.2, 2}
 		lightPos := mgl32.Vec3{0, 2, 0}
 		angle0 := float32(0)
 		angle1 := float32(0)
@@ -255,8 +259,8 @@ func main() {
 			//Perform rendering
 			gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 			for i := 0; i < w; i++ {
-				for j := 0; j < h; j++{
-					model = mgl32.Translate3D(float32(i)*1.5, 0, float32(j)*1.5)
+				for j := 0; j < h; j++ {
+					model = mgl32.Translate3D(float32(i)*10, 0, float32(j)*10)
 					gl.UniformMatrix4fv(modelUniform, 1, false, &model[0])
 					personMesh.Draw()
 				}
