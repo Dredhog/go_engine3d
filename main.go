@@ -72,7 +72,7 @@ func main() {
 	version := gl.GoStr(gl.GetString(gl.VERSION))
 	fmt.Println("OpenGL version", version)
 
-	mesh, err := collada.ParseToMesh("data/model/t.dae")
+	mesh, err := collada.ParseToMesh("data/model/t_baboon.dae")
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -89,7 +89,7 @@ func main() {
 		gl.DepthFunc(gl.LESS)
 		gl.ClearColor(0.3, 0.3, 0.4, 1.0)
 
-		rabbitDiffuse, err := texture.NewTexture("rabbit.png")
+		rabbitDiffuse, err := texture.NewTexture("baboon.png")
 		if err != nil {
 			log.Fatalln(err)
 		}
@@ -108,7 +108,7 @@ func main() {
 
 		model := mgl32.Ident4()
 		projection := mgl32.Perspective(math.Pi/4, 1.6, 0.1, 100.0)
-		playerPos := mgl32.Vec3{0, 0.2, 2}
+		playerPos := mgl32.Vec3{0, 1, 2}
 		lightPos := mgl32.Vec3{0, 2, 0}
 		var angle0, angle1, angle2, angle3, angle4, angle5, angle6, angle7 float32
 		t0 := time.Now()

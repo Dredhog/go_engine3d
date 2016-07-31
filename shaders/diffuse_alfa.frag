@@ -24,5 +24,5 @@ void main()
 	float light_dot_normal = dot(normalize(light_position - Position), Normal);
 	float diffuse_alfa = max(light_dot_normal, 0.2);
 
-	outColor = light_squared_norm * diffuse_alfa * vec4(Color, 1);//* texture(sampler_diffuse, TexCoord);  
+	outColor = light_squared_norm * diffuse_alfa * texture(sampler_diffuse, TexCoord);  
 }
