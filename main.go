@@ -9,7 +9,7 @@ import (
 	"training/engine/anim"
 	"training/engine/load/shader"
 	"training/engine/load/texture"
-	"training/engine/parse/obj"
+	"training/engine/parse/collada"
 	"training/engine/types"
 
 	"github.com/go-gl/gl/v4.1-core/gl"
@@ -27,109 +27,9 @@ const (
 	screenWidth  = 1920
 	screenHeight = 1080
 	fps          = 122
-	w            = 25
+	w            = 1
 	h            = 1
 )
-
-var vertices = []float32{
-	//Root Vertex
-	0, 0, 0, //position
-	1, 0, 0, //normal
-	0, 0, //bones
-	1.0, 0, //weights
-
-	//Neck
-	0, 0.1, 0, //position
-	1, 0, 0, //normal
-	1, 0, //bones
-	0.7, 0.3, //weights
-
-	//Left shoulder
-	-0.2, 0.05, 0, //position
-	1, 0, 1, //normal
-	2, 4, //bones
-	0.6, 4.0, //weights
-
-	//Right shoulder
-	0.2, 0.05, 0, //position
-	1, 0, 1, //normal
-	3, 5, //bones
-	0.6, 4.0, //weights
-
-	//Left elbow
-	-0.4, 0.05, 0, //position
-	1, 0, 0, //normal
-	4, 6, //bones
-	0.6, 4.0, //weights
-
-	//Right elbow
-	0.4, 0.05, 0, //position
-	0, 0, 1, //normal
-	5, 7, //bones
-	0.6, 4.0, //weights
-
-	//Left wrist
-	-0.6, 0.05, 0, //position
-	0, 1, 1, //normal
-	6, 6, //bones
-	0.6, 4.0, //weights
-
-	//Right wrist
-	0.6, 0.05, 0, //position
-	0, 1, 1, //normal
-	7, 7, //bones
-	0.6, 4.0, //weights
-	//-----------Bottom of arm----------------------
-	//Left shoulder
-	-0.2, -0.05, 0, //position
-	1, 0, 0, //normal
-	2, 4, //bones
-	0.8, 0.2, //weights
-
-	//Right shoulder
-	0.2, -0.05, 0, //position
-	1, 0, 0, //normal
-	3, 5, //bones
-	0.8, 0.2, //weights
-
-	//Left elbow
-	-0.4, -0.05, 0, //position
-	1, 0, 0, //normal
-	4, 6, //bones
-	0.8, 0.2, //weights
-
-	//Right elbow
-	0.4, -0.05, 0, //position
-	1, 0, 0, //normal
-	5, 7, //bones
-	0.8, 0.2, //weights
-
-	//Left wrist
-	-0.6, -0.05, 0, //position
-	1, 0, 0, //normal
-	6, 6, //bones
-	0.8, 0.2, //weights
-
-	//Right wrist
-	0.6, -0.05, 0, //position
-	1, 0, 0, //normal
-	7, 7, //bones
-	0.8, 0.2, //weights
-}
-
-var elements []uint32 = []uint32{
-	0, 1,
-	0, 2,
-	0, 3,
-	2, 4,
-	3, 5,
-	4, 6,
-	5, 7,
-	8, 10,
-	10, 12,
-	9, 11,
-	11, 13,
-}
 
 func main() {
 
@@ -145,7 +45,7 @@ func main() {
 	arm.Bones[7] = anim.Bone{Name: "right_elbow   ", Index: 7, ParentIndex: 5, ToRoot: anim.Transform{[3]float32{1, 1, 1}, [3]float32{-0.4, 0, 0}, [3]float32{}}}
 	//---------------------------------------------------------------------------
 
-	vertices, elements := obj.ParseFile("sebastian_ao.obj", true, true)
+	//vertices, elements :=obj.ParseFile("sebastian_ao.obj", true, true)
 
 	//Set up glfw
 	if err := glfw.Init(); err != nil {
@@ -172,25 +72,34 @@ func main() {
 	version := gl.GoStr(gl.GetString(gl.VERSION))
 	fmt.Println("OpenGL version", version)
 
-	shaderProgram, err := shader.NewProgram("diffuse_alfa")
+	mesh, err := collada.ParseToMesh("rabbit.dae")
 	if err != nil {
 		panic(err)
 	}
+
+	shaderProgram, err := shader.NewProgram("diffuse_alfa")
+	if err != nil {
+		log.Fatalln(err)
+	}
 	//Game loop function
 	func(window *glfw.Window, shaderProgram uint32) {
-		gl.Enable(gl.CULL_FACE)
-		gl.CullFace(gl.BACK)
+		//gl.Enable(gl.CULL_FACE)
+		//gl.CullFace(gl.BACK)
 		gl.Enable(gl.DEPTH_TEST)
 		gl.DepthFunc(gl.LESS)
 		gl.ClearColor(0.3, 0.3, 0.4, 1.0)
 
-		rabbitDiffuse, err := texture.NewTexture("AO.png")
+		rabbitDiffuse, err := texture.NewTexture("rabbit.png")
 		if err != nil {
-			panic(err)
+			log.Fatalln(err)
 		}
+		mesh.Textures = []types.Texture{{rabbitDiffuse, "DIFFUSE"}}
+		//if err != nil {
+		//panic(err)
+		//}
 
-		var personMesh types.Mesh
-		personMesh.Init(vertices, elements, []types.Texture{{rabbitDiffuse, "DIFFUSE"}})
+		//var personMesh types.Mesh
+		//personMesh.Init(vertices, elements, types.USE_POSITIONS|types.USE_TEXCOORDS, [5]int{0, 0, 12 * 3, 0, 0}, []types.Texture{{rabbitDiffuse, "DIFFUSE"}})
 		//Get uniforms from shader
 		mvpUniform := gl.GetUniformLocation(shaderProgram, gl.Str("mvp_mat\x00"))
 		modelUniform := gl.GetUniformLocation(shaderProgram, gl.Str("model_mat\x00"))
@@ -201,14 +110,7 @@ func main() {
 		projection := mgl32.Perspective(math.Pi/4, 1.6, 0.1, 100.0)
 		playerPos := mgl32.Vec3{0, 0.2, 2}
 		lightPos := mgl32.Vec3{0, 2, 0}
-		angle0 := float32(0)
-		angle1 := float32(0)
-		angle2 := float32(0)
-		angle3 := float32(0)
-		angle4 := float32(0)
-		angle5 := float32(0)
-		angle6 := float32(0)
-		angle7 := float32(0)
+		var angle0, angle1, angle2, angle3, angle4, angle5, angle6, angle7 float32
 		t0 := time.Now()
 		startTime := t0
 		frameTime := time.Second / fps
@@ -223,6 +125,7 @@ func main() {
 			//UPDATE VARIABLES
 			camera := mgl32.LookAtV(playerPos, playerPos.Add(mgl32.Vec3{0, -0.5, -3}), mgl32.Vec3{0, 1, 0})
 			mvp := projection.Mul4(camera)
+
 			arm.CalculateFinalTransformations(
 				anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, angle0}},
 				anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, angle1}},
@@ -258,13 +161,8 @@ func main() {
 
 			//Perform rendering
 			gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
-			for i := 0; i < w; i++ {
-				for j := 0; j < h; j++ {
-					model = mgl32.Translate3D(float32(i)*10, 0, float32(j)*10)
-					gl.UniformMatrix4fv(modelUniform, 1, false, &model[0])
-					personMesh.Draw()
-				}
-			}
+			//personMesh.Draw()
+			mesh.Draw()
 			window.SwapBuffers()
 		}
 	}(window, shaderProgram)

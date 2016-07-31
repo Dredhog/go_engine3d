@@ -8,6 +8,7 @@ in vec3 Normal;
 in vec2 TexCoord;
 
 out vec4 outColor;
+vec4 white = vec4(1, 1, 1, 1);
 
 void main()
 {

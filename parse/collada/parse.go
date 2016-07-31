@@ -5,135 +5,119 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"strconv"
+	"strings"
+	"training/engine/types"
 )
 
 func Parse(fileName string) (collada, error) {
-	relativePath, err := os.Getwd()
+	absolutePath, err := os.Getwd()
 	if err != nil {
-		return nil, fmt.Errorf("parse collada: realative path read error: %v", err)
+		return collada{}, fmt.Errorf("parse collada: absolute path error: %v\n", err)
 	}
 
 	//Read entire collada file
-	colladaBytes, err := ioutil.ReadFile(relativePath + "/../../data/model/" + fileName)
+	colladaBytes, err := ioutil.ReadFile(absolutePath + "/data/model/" + fileName)
 	if err != nil {
-		return nil, fmt.Errorf("parse collada: %v", err)
+		return collada{}, fmt.Errorf("parse collada: %v\n", err)
 	}
-	var collada collada
-	if err := xml.Unmarshal(colladaBytes, &collada); err != nil {
-		return nil, fmt.Errorf("parse collada: %v", err)
+	var coll collada
+	if err := xml.Unmarshal(colladaBytes, &coll); err != nil {
+		return collada{}, fmt.Errorf("parse collada: %v\n", err)
 	}
-	for _, v := range collada.LibraryGeometries.Geometries[0].Meshes[0].Sources {
-		fmt.Printf("%#v\n", v)
-	}
-	return collada, nil
+	return coll, nil
 }
 
-func ColladaToMesh(fileName string) ([]float32, []uint32) {
-	collada, err = Parse(fileName)
-	if err != nil {
-		return nil, nil, fmt.Errorf("Collada to mesh: conversion error %v", err)
+func stringToFLoatArray(str string) ([]float32, error) {
+	split := strings.Split(str, " ")
+	var result []float32
+	for _, s := range split {
+		if s != "" {
+			f, err := strconv.ParseFloat(s, 32)
+			if err != nil {
+				return nil, fmt.Errorf("Collada: string to float conv error: %v, for number: %v\n", err, f)
+			}
+			result = append(result, float32(f))
+		}
 	}
+	return result, nil
 }
 
-var data = []byte(`
-<?xml version="1.0" encoding="utf-8"?>
-<COLLADA xmlns="http://www.collada.org/2005/11/COLLADASchema" version="1.4.1">
-  <asset>
-    <contributor>
-      <author>Blender User</author>
-      <authoring_tool>Blender 2.77.0 commit date:2016-04-05, commit time:18:12, hash:abf6f08</authoring_tool>
-    </contributor>
-    <created>2016-07-26T16:24:10</created>
-    <modified>2016-07-26T16:24:10</modified>
-    <unit name="meter" meter="1"/>
-    <up_axis>Z_UP</up_axis>
-  </asset>
-  <library_images/>
-  <library_effects>
-    <effect id="Material-effect">
-      <profile_COMMON>
-        <technique sid="common">
-          <phong>
-            <emission>
-              <color sid="emission">0 0 0 1</color>
-            </emission>
-            <ambient>
-              <color sid="ambient">0 0 0 1</color>
-            </ambient>
-            <diffuse>
-              <color sid="diffuse">0.64 0.64 0.64 1</color>
-            </diffuse>
-            <specular>
-              <color sid="specular">0.5 0.5 0.5 1</color>
-            </specular>
-            <shininess>
-              <float sid="shininess">50</float>
-            </shininess>
-            <index_of_refraction>
-              <float sid="index_of_refraction">1</float>
-            </index_of_refraction>
-          </phong>
-        </technique>
-      </profile_COMMON>
-    </effect>
-  </library_effects>
-  <library_materials>
-    <material id="Material-material" name="Material">
-      <instance_effect url="#Material-effect"/>
-    </material>
-  </library_materials>
-  <library_geometries>
-    <geometry id="Cube-mesh" name="Cube">
-      <mesh>
-        <source id="Cube-mesh-positions">
-          <float_array id="Cube-mesh-positions-array" count="24">1 1 -1 1 -1 -1 -1 -0.9999998 -1 -0.9999997 1 -1 1 0.9999995 1 0.9999994 -1.000001 1 -1 -0.9999997 1 -1 1 1</float_array>
-          <technique_common>
-            <accessor source="#Cube-mesh-positions-array" count="8" stride="3">
-              <param name="X" type="float"/>
-              <param name="Y" type="float"/>
-              <param name="Z" type="float"/>
-            </accessor>
-          </technique_common>
-        </source>
-        <source id="Cube-mesh-normals">
-          <float_array id="Cube-mesh-normals-array" count="36">0 0 -1 0 0 1 1 0 -2.38419e-7 0 -1 -4.76837e-7 -1 2.38419e-7 -1.49012e-7 2.68221e-7 1 2.38419e-7 0 0 -1 0 0 1 1 -5.96046e-7 3.27825e-7 -4.76837e-7 -1 0 -1 2.38419e-7 -1.19209e-7 2.08616e-7 1 0</float_array>
-          <technique_common>
-            <accessor source="#Cube-mesh-normals-array" count="12" stride="3">
-              <param name="X" type="float"/>
-              <param name="Y" type="float"/>
-              <param name="Z" type="float"/>
-            </accessor>
-          </technique_common>
-        </source>
-        <vertices id="Cube-mesh-vertices">
-          <input semantic="POSITION" source="#Cube-mesh-positions"/>
-        </vertices>
-        <polylist material="Material-material" count="12">
-          <input semantic="VERTEX" source="#Cube-mesh-vertices" offset="0"/>
-          <input semantic="NORMAL" source="#Cube-mesh-normals" offset="1"/>
-          <vcount>3 3 3 3 3 3 3 3 3 3 3 3 </vcount>
-          <p>0 0 2 0 3 0 7 1 5 1 4 1 4 2 1 2 0 2 5 3 2 3 1 3 2 4 7 4 3 4 0 5 7 5 4 5 0 6 1 6 2 6 7 7 6 7 5 7 4 8 5 8 1 8 5 9 6 9 2 9 2 10 6 10 7 10 0 11 3 11 7 11</p>
-        </polylist>
-      </mesh>
-    </geometry>
-  </library_geometries>
-  <library_controllers/>
-  <library_visual_scenes>
-    <visual_scene id="Scene" name="Scene">
-      <node id="Cube" name="Cube" type="NODE">
-        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 1 0 0 0 1</matrix>
-        <instance_geometry url="#Cube-mesh" name="Cube">
-          <bind_material>
-            <technique_common>
-              <instance_material symbol="Material-material" target="#Material-material"/>
-            </technique_common>
-          </bind_material>
-        </instance_geometry>
-      </node>
-    </visual_scene>
-  </library_visual_scenes>
-  <scene>
-    <instance_visual_scene url="#Scene"/>
-  </scene>
-</COLLADA>
-`)
+func stringToIntArray(str string) ([]int, error) {
+	split := strings.Split(str, " ")
+	var result []int
+	for _, s := range split {
+		if s != "" {
+			i, err := strconv.Atoi(s)
+			if err != nil {
+				return nil, fmt.Errorf("collada: string to int conv error: %v, for number: %v\n", err, i)
+			}
+			result = append(result, i)
+		}
+	}
+	return result, nil
+}
+
+func expandAttribsAccordingToIndices(floats []float32, indices []int, floatStride, indexStride, indexOffset int) {
+
+}
+
+func ParseToMesh(fileName string) (*types.Mesh, error) {
+	collada, err := Parse(fileName)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(collada.LibraryGeometries.Geometries) == 0 {
+		return nil, fmt.Errorf("collada to mesh: no geometry data found in %v\n", fileName)
+	}
+
+	meshCollada := collada.LibraryGeometries.Geometries[0].Meshes[0]
+	indicesCollada, err := stringToIntArray(meshCollada.Polylist.P)
+	if err != nil {
+		return nil, err
+	}
+
+	floatsPerVert := 0
+	for _, source := range meshCollada.Sources {
+		tempInt, _ := strconv.Atoi(source.TechniqueCommon.Accessor.Stride)
+		floatsPerVert += tempInt
+	}
+
+	attrMask := uint32(0)
+	attrOffsets := [5]int{}
+	indexStride := len(meshCollada.Polylist.Inputs)
+	floats := make([]float32, floatsPerVert*len(indicesCollada)/indexStride)
+
+	for a, floatCount := 0, 0; a < indexStride; a++ {
+		attribute := meshCollada.Polylist.Inputs[a]
+		switch attribute.Semantic {
+		case "VERTEX":
+			attrMask += types.USE_POSITIONS
+			attrOffsets[0] = floatCount
+		case "NORMAL":
+			attrMask += types.USE_NORMALS
+			attrOffsets[1] = floatCount
+		case "TEXCOORD":
+			attrMask += types.USE_TEXCOORDS
+			attrOffsets[2] = floatCount
+		}
+		attribs, _ := stringToFLoatArray(meshCollada.Sources[a].FloatArray.Floats)
+		floatStride, _ := strconv.Atoi(meshCollada.Sources[a].TechniqueCommon.Accessor.Stride)
+		indexOffset, _ := strconv.Atoi(meshCollada.Polylist.Inputs[a].Offset)
+		for b := indexOffset; b < len(indicesCollada); b += indexStride {
+			for c := 0; c < floatStride; c++ {
+				floats[floatCount] = attribs[floatStride*indicesCollada[b]+c]
+				floatCount++
+			}
+		}
+	}
+	indices := make([]uint32, len(floats)/floatsPerVert)
+	for i, _ := range indices {
+		indices[i] = uint32(i)
+	}
+	mesh := types.Mesh{}
+	mesh.Init(floats, indices, attrMask, attrOffsets, nil)
+
+	return &mesh, nil
+}

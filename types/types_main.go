@@ -11,13 +11,23 @@ type Texture struct {
 	TexType string
 }
 
+const (
+	USE_POSITIONS = 1 << iota
+	USE_NORMALS   = 1 << iota
+	USE_TEXCOORDS = 1 << iota
+	USE_BONES     = 1 << iota
+)
+
 type Mesh struct {
-	Vertices []float32
+	Floats   []float32
 	Indices  []uint32
 	Textures []Texture
 	VAO      uint32
 	VBO      uint32
 	EBO      uint32
+
+	AttrMask uint32
+	Offsets  [5]int
 }
 
 type Model struct {
