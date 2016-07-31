@@ -60,21 +60,21 @@ func main() {
 	glfw.WindowHint(glfw.OpenGLForwardCompatible, glfw.True)
 	window, err := glfw.CreateWindow(screenWidth, screenHeight, "Opengl", nil, nil)
 	if err != nil {
-		panic(err)
+		log.Fatalln(err)
 	}
 	window.MakeContextCurrent()
 
 	//Initialize Glow
 	if err := gl.Init(); err != nil {
-		panic(err)
+		log.Fatalln(err)
 	}
 
 	version := gl.GoStr(gl.GetString(gl.VERSION))
 	fmt.Println("OpenGL version", version)
 
-	mesh, err := collada.ParseToMesh("rabbit.dae")
+	mesh, err := collada.ParseToMesh("data/model/t.dae")
 	if err != nil {
-		panic(err)
+		log.Fatalln(err)
 	}
 
 	shaderProgram, err := shader.NewProgram("diffuse_alfa")

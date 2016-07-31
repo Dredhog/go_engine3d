@@ -10,14 +10,12 @@ import (
 	"training/engine/types"
 )
 
-func Parse(fileName string) (collada, error) {
-	absolutePath, err := os.Getwd()
+func Parse(relativePath string) (collada, error) {
+	workingDir, err := os.Getwd()
 	if err != nil {
 		return collada{}, fmt.Errorf("parse collada: absolute path error: %v\n", err)
 	}
-
-	//Read entire collada file
-	colladaBytes, err := ioutil.ReadFile(absolutePath + "/data/model/" + fileName)
+	colladaBytes, err := ioutil.ReadFile(workingDir + "/" + relativePath)
 	if err != nil {
 		return collada{}, fmt.Errorf("parse collada: %v\n", err)
 	}
@@ -56,10 +54,6 @@ func stringToIntArray(str string) ([]int, error) {
 		}
 	}
 	return result, nil
-}
-
-func expandAttribsAccordingToIndices(floats []float32, indices []int, floatStride, indexStride, indexOffset int) {
-
 }
 
 func ParseToMesh(fileName string) (*types.Mesh, error) {
@@ -101,6 +95,9 @@ func ParseToMesh(fileName string) (*types.Mesh, error) {
 		case "TEXCOORD":
 			attrMask += types.USE_TEXCOORDS
 			attrOffsets[2] = floatCount
+		case "COLOR":
+			attrMask += types.USE_COLORS
+			attrOffsets[3] = floatCount
 		}
 		attribs, _ := stringToFLoatArray(meshCollada.Sources[a].FloatArray.Floats)
 		floatStride, _ := strconv.Atoi(meshCollada.Sources[a].TechniqueCommon.Accessor.Stride)

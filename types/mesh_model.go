@@ -38,9 +38,14 @@ func (m *Mesh) setUpMesh() {
 		gl.EnableVertexAttribArray(2)
 		gl.VertexAttribPointer(2, 2, gl.FLOAT, false, 0, gl.PtrOffset(4*m.Offsets[2]))
 	}
-	if m.AttrMask&USE_BONES != 0 {
+	if m.AttrMask&USE_COLORS != 0 {
+		//Vertex texture coords
 		gl.EnableVertexAttribArray(3)
-		gl.VertexAttribPointer(3, 2, gl.FLOAT, false, 0, gl.PtrOffset(4*m.Offsets[3]))
+		gl.VertexAttribPointer(3, 3, gl.FLOAT, false, 0, gl.PtrOffset(4*m.Offsets[3]))
+	}
+	if m.AttrMask&USE_BONES != 0 {
+		gl.EnableVertexAttribArray(4)
+		gl.VertexAttribPointer(4, 2, gl.FLOAT, false, 0, gl.PtrOffset(4*m.Offsets[4]))
 	}
 
 	//Rebind default array object

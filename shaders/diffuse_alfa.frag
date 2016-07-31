@@ -6,6 +6,7 @@ uniform sampler2D sampler_diffuse;
 in vec3 Position;
 in vec3 Normal;
 in vec2 TexCoord;
+in vec3 Color;
 
 out vec4 outColor;
 vec4 white = vec4(1, 1, 1, 1);
@@ -23,5 +24,5 @@ void main()
 	float light_dot_normal = dot(normalize(light_position - Position), Normal);
 	float diffuse_alfa = max(light_dot_normal, 0.2);
 
-	outColor = light_squared_norm * diffuse_alfa * texture(sampler_diffuse, TexCoord);  
+	outColor = light_squared_norm * diffuse_alfa * vec4(Color, 1);//* texture(sampler_diffuse, TexCoord);  
 }

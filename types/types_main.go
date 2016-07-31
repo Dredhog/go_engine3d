@@ -15,6 +15,7 @@ const (
 	USE_POSITIONS = 1 << iota
 	USE_NORMALS   = 1 << iota
 	USE_TEXCOORDS = 1 << iota
+	USE_COLORS    = 1 << iota
 	USE_BONES     = 1 << iota
 )
 
