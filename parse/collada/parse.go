@@ -7,6 +7,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"training/engine/anim"
 	"training/engine/types"
 )
 
@@ -56,13 +57,23 @@ func stringToIntArray(str string) ([]int, error) {
 	return result, nil
 }
 
-func extractSkinData(libraryControllers *libraryControllers) ([]float32, []float32, error) {
-	skin := libraryControllers.Controllers[0].Skin
+func splitAndRemoveEmpty(str string) []string {
+	split := strings.Split(str, " ")
+	var result []string
+	for _, s := range split {
+		if s != "" {
+			result = append(result, s)
+		}
+	}
+	return result
+}
+
+func parseSkin(skin *skin) ([]float32, []float32, error) {
 	var boneDataIndices, influenceCounts []int
 	var boneWeights []float32
 	indexStride, bonesPerVert := 2, 2
 
-	boneWeights, err := stringToFloatArray(skin.Sources[2].FloatArray.Floats)
+	boneWeights, err := stringToFloatArray(skin.Sources[2].FloatArray.Content)
 	if err != nil {
 		return nil, nil, fmt.Errorf("collada: skin error getting bone weights %v", err)
 	}
@@ -106,16 +117,31 @@ func extractSkinData(libraryControllers *libraryControllers) ([]float32, []float
 	return indices, weights, nil
 }
 
-func ParseToMesh(fileName string) (*types.Mesh, error) {
+func ParseModel(fileName string) (*types.Model, error) {
 	collada, err := Parse(fileName)
 	if err != nil {
 		return nil, err
 	}
-
 	if collada.LibraryGeometries == nil {
 		return nil, fmt.Errorf("collada to mesh: no geometry data found in %v\n", fileName)
 	}
-	meshCollada := collada.LibraryGeometries.Geometries[0].Meshes[0]
+	model := types.Model{}
+
+	meshCollada := &collada.LibraryGeometries.Geometries[0].Meshes[0]
+	controllerCollada := &collada.LibraryControllers.Controllers[0]
+	model.Mesh, err = extractMesh(meshCollada, controllerCollada)
+	if err != nil {
+		return nil, fmt.Errorf("collada mode: error extracting mesh : %v", err)
+	}
+	model.Skeleton, err = extractSkeleton(&controllerCollada.Skin, collada.LibraryVisualScenes)
+	if err != nil {
+		return nil, fmt.Errorf("collada mode: error extracting skeleton: %v", err)
+	}
+
+	return &model, nil
+}
+
+func extractMesh(meshCollada *mesh, controllerCollada *controller) (*types.Mesh, error) {
 	indices, err := stringToIntArray(meshCollada.Polylist.P)
 	if err != nil {
 		return nil, err
@@ -148,7 +174,7 @@ func ParseToMesh(fileName string) (*types.Mesh, error) {
 			attrMask += types.USE_COLORS
 			attrOffsets[3] = floatCount
 		}
-		attribs, _ := stringToFloatArray(meshCollada.Sources[a].FloatArray.Floats)
+		attribs, _ := stringToFloatArray(meshCollada.Sources[a].FloatArray.Content)
 		floatStride, _ := strconv.Atoi(meshCollada.Sources[a].TechniqueCommon.Accessor.Stride)
 		indexOffset, _ := strconv.Atoi(meshCollada.Polylist.Inputs[a].Offset)
 		for b := indexOffset; b < len(indices); b += indexStride {
@@ -161,8 +187,8 @@ func ParseToMesh(fileName string) (*types.Mesh, error) {
 
 	//Bones
 	var boneIndexAttribs, boneWeightAttribs []float32
-	if collada.LibraryControllers != nil {
-		boneIndexAttribs, boneWeightAttribs, err = extractSkinData(collada.LibraryControllers)
+	if controllerCollada != nil {
+		boneIndexAttribs, boneWeightAttribs, err = parseSkin(&controllerCollada.Skin)
 		if err != nil {
 			return nil, fmt.Errorf("collada to mesh: skin data extraction error: %v", err)
 		}
@@ -179,6 +205,9 @@ func ParseToMesh(fileName string) (*types.Mesh, error) {
 		attrOffsets[4] = len(floats)
 		attrOffsets[5] = attrOffsets[4] + weightAttribOffset
 		floats = append(floats, boneFloats...)
+		if err != nil {
+			panic(err)
+		}
 	}
 	//Indices ("0, 1, 2, ..., n")
 	finalIndices := make([]uint32, len(indices)/indexStride)
@@ -189,4 +218,48 @@ func ParseToMesh(fileName string) (*types.Mesh, error) {
 	mesh.Init(floats, finalIndices, attrMask, attrOffsets, nil)
 
 	return &mesh, nil
+}
+
+func extractSkeleton(skin *skin, libraryVisualScenes *libraryVisualScenes) (*anim.Skeleton, error) {
+	sidToInvBindMat := make(map[string][]float32)
+	sidToIndex := make(map[string]int)
+	boneNames := splitAndRemoveEmpty(skin.Sources[0].NameArray.Content)
+	invBindMatriceFloats, err := stringToFloatArray(skin.Sources[1].FloatArray.Content)
+	if err != nil {
+		return nil, fmt.Errorf("collada: skeleton: getting inv bind matrices %v", err)
+	}
+
+	for i, name := range boneNames {
+		sidToInvBindMat[name] = invBindMatriceFloats[i*16 : (i+1)*16]
+		sidToIndex[name] = i
+	}
+
+	var armature node
+	for _, node := range libraryVisualScenes.VisualScene.Nodes {
+		if node.Name == "Armature" {
+			armature = node
+		}
+	}
+	for _, node := range armature.Nodes {
+		if node.Type == "JOINT" {
+			bones := make([]anim.Bone, len(boneNames))
+			registerBoneAndItsChildren(bones, &node, sidToIndex[node.Name], sidToIndex, sidToInvBindMat)
+
+			skeleton := anim.NewSkeleton(bones)
+			skeleton.RootIndex = sidToIndex[node.Name]
+			return skeleton, nil
+		}
+	}
+	return nil, fmt.Errorf("collada: no root node found in skeleton data")
+}
+
+func registerBoneAndItsChildren(bones []anim.Bone, currentNode *node, parentIndex int, sidToIndex map[string]int, sidToInvBindMat map[string][]float32) {
+	currentIndex := sidToIndex[currentNode.Sid]
+	bones[currentIndex].Name = currentNode.Name
+	bones[currentIndex].Index = sidToIndex[currentNode.Sid]
+	bones[currentIndex].ParentIndex = parentIndex
+	copy(bones[currentIndex].InverseBindMatrix[:], sidToInvBindMat[currentNode.Sid])
+	for _, node := range currentNode.Nodes {
+		registerBoneAndItsChildren(bones, &node, sidToIndex[currentNode.Sid], sidToIndex, sidToInvBindMat)
+	}
 }

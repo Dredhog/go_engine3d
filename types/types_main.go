@@ -1,5 +1,7 @@
 package types
 
+import "training/engine/anim"
+
 type Vertex struct {
 	Position [3]float32
 	Normal   [3]float32
@@ -32,5 +34,6 @@ type Mesh struct {
 }
 
 type Model struct {
-	Meshes []Mesh
+	Mesh     *Mesh
+	Skeleton *anim.Skeleton
 }

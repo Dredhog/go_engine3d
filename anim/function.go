@@ -1,14 +1,15 @@
 package anim
 
-import "github.com/go-gl/mathgl/mgl32"
-import "fmt"
+import (
+	"fmt"
 
-func NewSkeleton(boneCount int) *Skeleton {
-	s := Skeleton{}
-	s.Bones = make([]Bone, boneCount)
-	s.ToRootTransforms = make([]mgl32.Mat4, boneCount)
-	s.LocalTransforms = make([]mgl32.Mat4, boneCount)
-	s.FinalTransforms = make([]mgl32.Mat4, boneCount)
+	"github.com/go-gl/mathgl/mgl32"
+)
+
+func NewSkeleton(bones []Bone) *Skeleton {
+	s := Skeleton{Bones: bones}
+	s.localTransformations = make([]mgl32.Mat4, len(bones))
+	s.FinalTransformations = make([]mgl32.Mat4, len(bones))
 	return &s
 }
 
@@ -20,12 +21,11 @@ func TransformToMat4(t Transform) mgl32.Mat4 {
 }
 
 func (s *Skeleton) CalculateFinalTransformations(transforms ...Transform) error {
-	if len(s.Bones) != len(transforms) {
+	if len(transforms) != len(s.Bones) {
 		return fmt.Errorf("anim: Wrong number of transforms for skeleton. expected %v, got %v", len(s.Bones), len(transforms))
 	}
 	for i := range s.Bones {
 		s.Bones[i].Transform = transforms[i]
-		s.ToRootTransforms[i] = TransformToMat4(s.Bones[i].ToRoot)
 	}
 	for _, b := range s.Bones {
 		_ = CalcFinalTransform(&b, s)
@@ -40,23 +40,21 @@ func (s *Skeleton) CalculateFinalTransformations(transforms ...Transform) error 
 func CalcLocalTransform(b *Bone, s *Skeleton) mgl32.Mat4 {
 	if !b.LocalSet {
 		b.LocalSet = true
-		toRoot := TransformToMat4(b.ToRoot)
-		toRootInv := toRoot.Inv()
+		bindMatrix := b.InverseBindMatrix.Inv()
 		transformation := TransformToMat4(b.Transform)
-		s.LocalTransforms[b.Index] = toRootInv.Mul4(transformation.Mul4(toRoot))
-		//s.LocalTransforms[b.Index] = TransformToMat4(b.ToRoot).Inv().Mul4(TransformToMat4(b.Transform).Mul4(TransformToMat4(b.ToRoot)))
+		s.localTransformations[b.Index] = bindMatrix.Mul4(transformation.Mul4(b.InverseBindMatrix))
 	}
-	return s.LocalTransforms[b.Index]
+	return s.localTransformations[b.Index]
 }
 
 func CalcFinalTransform(b *Bone, s *Skeleton) mgl32.Mat4 {
 	if !b.FinalSet {
 		if b.Index == s.RootIndex {
-			s.FinalTransforms[b.Index] = TransformToMat4(b.Transform)
+			s.FinalTransformations[b.Index] = TransformToMat4(b.Transform)
 		} else {
-			s.FinalTransforms[b.Index] = CalcFinalTransform(&s.Bones[b.ParentIndex], s).Mul4(CalcLocalTransform(b, s))
+			s.FinalTransformations[b.Index] = CalcFinalTransform(&s.Bones[b.ParentIndex], s).Mul4(CalcLocalTransform(b, s))
 		}
 		b.FinalSet = true
 	}
-	return s.FinalTransforms[b.Index]
+	return s.FinalTransformations[b.Index]
 }

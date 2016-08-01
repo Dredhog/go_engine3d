@@ -21,5 +21,5 @@ void main()
 	Normal = normalize(normal);
 	TexCoord = texCoord;
 	Color = color;
-	gl_Position = mvp_mat * model_mat *(weights.x*bone_mat[int(bones.x)] + weights.y*bone_mat[int(bones.y)]) * vec4(position, 1.0);
+	gl_Position = mvp_mat * model_mat * (weights.x*bone_mat[int(bones.x)] + weights.y*bone_mat[int(bones.y)]) * vec4(position, 1.0);
 }

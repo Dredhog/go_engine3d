@@ -3,7 +3,7 @@ package collada
 import "encoding/xml"
 
 type collada struct {
-	XMLName             xml.Name            `xml:"COLLADA"`
+	XMLName             xml.Name             `xml:"COLLADA"`
 	LibraryGeometries   *libraryGeometries   `xml:"library_geometries"`
 	LibraryControllers  *libraryControllers  `xml:"library_controllers"`
 	LibraryVisualScenes *libraryVisualScenes `xml:"library_visual_scenes"`
@@ -67,9 +67,9 @@ type nameArray struct {
 }
 
 type floatArray struct {
-	Id     string `xml:"id,attr"`
-	Count  string `xml:"count,attr"`
-	Floats string `xml:",chardata"`
+	Id      string `xml:"id,attr"`
+	Count   string `xml:"count,attr"`
+	Content string `xml:",chardata"`
 }
 
 //------library_visual_scenes-----------
@@ -84,6 +84,7 @@ type visualScene struct {
 
 type node struct {
 	Id     string `xml:"id,attr"`
+	Sid    string `xml:"sid,attr"`
 	Name   string `xml:"name,attr"`
 	Type   string `xml:"type,attr"`
 	Matrix matrix `xml:"matrix"`

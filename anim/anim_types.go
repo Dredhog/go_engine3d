@@ -13,22 +13,21 @@ type Transform struct {
 }
 
 type Bone struct {
-	Transform   //The transformation relative to the parent
-	Name        string
-	ToRoot      Transform
-	Index       int
-	ParentIndex int
-	LocalSet    bool
-	FinalSet    bool
+	Transform         //The transformation relative to the parent
+	Name              string
+	InverseBindMatrix mgl32.Mat4
+	Index             int
+	ParentIndex       int
+	LocalSet          bool
+	FinalSet          bool
 }
 
 type Skeleton struct {
 	Transform
-	RootIndex        int
-	Bones            []Bone
-	LocalTransforms  []mgl32.Mat4
-	ToRootTransforms []mgl32.Mat4
-	FinalTransforms  []mgl32.Mat4
+	RootIndex            int
+	Bones                []Bone
+	localTransformations []mgl32.Mat4
+	FinalTransformations []mgl32.Mat4
 }
 
 type BoneState struct {

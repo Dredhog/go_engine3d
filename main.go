@@ -32,21 +32,6 @@ const (
 )
 
 func main() {
-
-	//---------------------------------ANIMATION---------------------------------
-	arm := anim.NewSkeleton(8)
-	arm.Bones[0] = anim.Bone{Name: "root          ", Index: 0, ParentIndex: 0, ToRoot: anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{}}}
-	arm.Bones[1] = anim.Bone{Name: "base          ", Index: 1, ParentIndex: 0, ToRoot: anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{}}}
-	arm.Bones[2] = anim.Bone{Name: "left_clavicle ", Index: 2, ParentIndex: 4, ToRoot: anim.Transform{[3]float32{1, 1, 1}, [3]float32{0, -2, 0}, [3]float32{}}}
-	arm.Bones[3] = anim.Bone{Name: "right_clavicle", Index: 3, ParentIndex: 4, ToRoot: anim.Transform{[3]float32{1, 1, 1}, [3]float32{0, -2, 0}, [3]float32{}}}
-	arm.Bones[4] = anim.Bone{Name: "shoulder      ", Index: 4, ParentIndex: 1, ToRoot: anim.Transform{[3]float32{1, 1, 1}, [3]float32{0, -2, 0}, [3]float32{}}}
-	arm.Bones[5] = anim.Bone{Name: "left_shoulder ", Index: 5, ParentIndex: 2, ToRoot: anim.Transform{[3]float32{1, 1, 1}, [3]float32{0.2, 0, 0}, [3]float32{}}}
-	arm.Bones[6] = anim.Bone{Name: "right_shoulder", Index: 6, ParentIndex: 3, ToRoot: anim.Transform{[3]float32{1, 1, 1}, [3]float32{-0.2, 0, 0}, [3]float32{}}}
-	arm.Bones[7] = anim.Bone{Name: "right_shoulder", Index: 7, ParentIndex: 3, ToRoot: anim.Transform{[3]float32{1, 1, 1}, [3]float32{-0.2, 0, 0}, [3]float32{}}}
-	//---------------------------------------------------------------------------
-
-	//vertices, elements :=obj.ParseFile("sebastian_ao.obj", true, true)
-
 	//Set up glfw
 	if err := glfw.Init(); err != nil {
 		log.Fatalln("failed to initialize glfw:", err)
@@ -72,12 +57,12 @@ func main() {
 	version := gl.GoStr(gl.GetString(gl.VERSION))
 	fmt.Println("OpenGL version", version)
 
-	mesh, err := collada.ParseToMesh("data/model/t_baboon_norm_weights.dae")
+	model, err := collada.ParseModel("data/model/t_skinned.dae")
 	if err != nil {
 		log.Fatalln(err)
 	}
 
-	shaderProgram, err := shader.NewProgram("diffuse_alfa")
+	shaderProgram, err := shader.NewProgram("skeleton_diffuse_alfa")
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -93,20 +78,16 @@ func main() {
 		if err != nil {
 			log.Fatalln(err)
 		}
-		mesh.Textures = []types.Texture{{rabbitDiffuse, "DIFFUSE"}}
-		//if err != nil {
-		//panic(err)
-		//}
+		model.Mesh.Textures = []types.Texture{{rabbitDiffuse, "DIFFUSE"}}
 
-		//var personMesh types.Mesh
-		//personMesh.Init(vertices, elements, types.USE_POSITIONS|types.USE_TEXCOORDS, [5]int{0, 0, 12 * 3, 0, 0}, []types.Texture{{rabbitDiffuse, "DIFFUSE"}})
 		//Get uniforms from shader
 		mvpUniform := gl.GetUniformLocation(shaderProgram, gl.Str("mvp_mat\x00"))
 		modelUniform := gl.GetUniformLocation(shaderProgram, gl.Str("model_mat\x00"))
 		lightPosUniform := gl.GetUniformLocation(shaderProgram, gl.Str("light_position\x00"))
 		boneUniforms := gl.GetUniformLocation(shaderProgram, gl.Str("bone_mat\x00"))
+		_ = boneUniforms
 
-		model := mgl32.Ident4()
+		modelMatrix := mgl32.Ident4()
 		projection := mgl32.Perspective(math.Pi/4, 1.6, 0.1, 100.0)
 		playerPos := mgl32.Vec3{0, 1, 2}
 		lightPos := mgl32.Vec3{0, 2, 0}
@@ -124,24 +105,26 @@ func main() {
 
 			//UPDATE VARIABLES
 			camera := mgl32.LookAtV(playerPos, playerPos.Add(mgl32.Vec3{0, -0.5, -3}), mgl32.Vec3{0, 1, 0})
-			mvp := projection.Mul4(camera)
+			mvpMatrix := projection.Mul4(camera)
 
-			arm.CalculateFinalTransformations(
+			if err := model.Skeleton.CalculateFinalTransformations(
 				anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, angle0}},
 				anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, angle1}},
 				anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, angle2}},
-				anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, angle3}},
-				anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, angle4}},
-				anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, angle5}},
-				anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, angle6}},
-				anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, angle7}},
-			)
+				//anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, angle3}},
+				// anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, angle4}},
+				// anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, angle5}},
+				// anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, angle6}},
+				// anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, angle7}},
+			); err != nil {
+				panic(err)
+			}
 
 			//Upload unifrom variables
-			gl.UniformMatrix4fv(mvpUniform, 1, false, &mvp[0])
-			gl.UniformMatrix4fv(modelUniform, 1, false, &model[0])
+			gl.UniformMatrix4fv(mvpUniform, 1, false, &mvpMatrix[0])
+			gl.UniformMatrix4fv(modelUniform, 1, false, &modelMatrix[0])
 			gl.Uniform3f(lightPosUniform, lightPos[0], lightPos[1], lightPos[2])
-			gl.UniformMatrix4fv(boneUniforms, 8, false, &arm.FinalTransforms[0][0])
+			gl.UniformMatrix4fv(boneUniforms, 8, false, &model.Skeleton.FinalTransformations[0][0])
 
 			gl.UseProgram(shaderProgram)
 
@@ -150,10 +133,8 @@ func main() {
 			time.Sleep(frameTime - time.Since(startTime))
 			if int(time.Since(t0)/time.Second) > seconds {
 				seconds++
-				fmt.Println("LocalTransforms")
-				fmt.Println(arm.LocalTransforms)
 				fmt.Println("FinalTransforms")
-				fmt.Println(arm.FinalTransforms)
+				fmt.Println(model.Skeleton.FinalTransformations)
 				fmt.Println("fps:", frames)
 				frames = 0
 			}
@@ -161,8 +142,7 @@ func main() {
 
 			//Perform rendering
 			gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
-			//personMesh.Draw()
-			mesh.Draw()
+			model.Mesh.Draw()
 			window.SwapBuffers()
 		}
 	}(window, shaderProgram)
