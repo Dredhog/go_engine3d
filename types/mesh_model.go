@@ -2,7 +2,7 @@ package types
 
 import "github.com/go-gl/gl/v4.1-core/gl"
 
-func (m *Mesh) Init(floats []float32, indices []uint32, attrMask uint32, offsets [5]int, textures []Texture) {
+func (m *Mesh) Init(floats []float32, indices []uint32, attrMask uint32, offsets [6]int, textures []Texture) {
 	m.Floats = floats
 	m.Indices = indices
 	m.Textures = textures
@@ -46,6 +46,8 @@ func (m *Mesh) setUpMesh() {
 	if m.AttrMask&USE_BONES != 0 {
 		gl.EnableVertexAttribArray(4)
 		gl.VertexAttribPointer(4, 2, gl.FLOAT, false, 0, gl.PtrOffset(4*m.Offsets[4]))
+		gl.EnableVertexAttribArray(5)
+		gl.VertexAttribPointer(5, 2, gl.FLOAT, false, 0, gl.PtrOffset(4*m.Offsets[5]))
 	}
 
 	//Rebind default array object

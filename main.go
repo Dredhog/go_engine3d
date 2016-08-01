@@ -36,13 +36,13 @@ func main() {
 	//---------------------------------ANIMATION---------------------------------
 	arm := anim.NewSkeleton(8)
 	arm.Bones[0] = anim.Bone{Name: "root          ", Index: 0, ParentIndex: 0, ToRoot: anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{}}}
-	arm.Bones[1] = anim.Bone{Name: "neck          ", Index: 1, ParentIndex: 0, ToRoot: anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{}}}
-	arm.Bones[2] = anim.Bone{Name: "left_clavicle ", Index: 2, ParentIndex: 0, ToRoot: anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{}}}
-	arm.Bones[3] = anim.Bone{Name: "right_clavicle", Index: 3, ParentIndex: 0, ToRoot: anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{}}}
-	arm.Bones[4] = anim.Bone{Name: "left_shoulder ", Index: 4, ParentIndex: 2, ToRoot: anim.Transform{[3]float32{1, 1, 1}, [3]float32{0.2, 0, 0}, [3]float32{}}}
-	arm.Bones[5] = anim.Bone{Name: "right_shoulder", Index: 5, ParentIndex: 3, ToRoot: anim.Transform{[3]float32{1, 1, 1}, [3]float32{-0.2, 0, 0}, [3]float32{}}}
-	arm.Bones[6] = anim.Bone{Name: "left_elbow    ", Index: 6, ParentIndex: 4, ToRoot: anim.Transform{[3]float32{1, 1, 1}, [3]float32{0.4, 0, 0}, [3]float32{}}}
-	arm.Bones[7] = anim.Bone{Name: "right_elbow   ", Index: 7, ParentIndex: 5, ToRoot: anim.Transform{[3]float32{1, 1, 1}, [3]float32{-0.4, 0, 0}, [3]float32{}}}
+	arm.Bones[1] = anim.Bone{Name: "base          ", Index: 1, ParentIndex: 0, ToRoot: anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{}}}
+	arm.Bones[2] = anim.Bone{Name: "left_clavicle ", Index: 2, ParentIndex: 4, ToRoot: anim.Transform{[3]float32{1, 1, 1}, [3]float32{0, -2, 0}, [3]float32{}}}
+	arm.Bones[3] = anim.Bone{Name: "right_clavicle", Index: 3, ParentIndex: 4, ToRoot: anim.Transform{[3]float32{1, 1, 1}, [3]float32{0, -2, 0}, [3]float32{}}}
+	arm.Bones[4] = anim.Bone{Name: "shoulder      ", Index: 4, ParentIndex: 1, ToRoot: anim.Transform{[3]float32{1, 1, 1}, [3]float32{0, -2, 0}, [3]float32{}}}
+	arm.Bones[5] = anim.Bone{Name: "left_shoulder ", Index: 5, ParentIndex: 2, ToRoot: anim.Transform{[3]float32{1, 1, 1}, [3]float32{0.2, 0, 0}, [3]float32{}}}
+	arm.Bones[6] = anim.Bone{Name: "right_shoulder", Index: 6, ParentIndex: 3, ToRoot: anim.Transform{[3]float32{1, 1, 1}, [3]float32{-0.2, 0, 0}, [3]float32{}}}
+	arm.Bones[7] = anim.Bone{Name: "right_shoulder", Index: 7, ParentIndex: 3, ToRoot: anim.Transform{[3]float32{1, 1, 1}, [3]float32{-0.2, 0, 0}, [3]float32{}}}
 	//---------------------------------------------------------------------------
 
 	//vertices, elements :=obj.ParseFile("sebastian_ao.obj", true, true)
@@ -72,7 +72,7 @@ func main() {
 	version := gl.GoStr(gl.GetString(gl.VERSION))
 	fmt.Println("OpenGL version", version)
 
-	mesh, err := collada.ParseToMesh("data/model/t_baboon.dae")
+	mesh, err := collada.ParseToMesh("data/model/t_baboon_norm_weights.dae")
 	if err != nil {
 		log.Fatalln(err)
 	}

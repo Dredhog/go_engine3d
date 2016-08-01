@@ -28,7 +28,7 @@ type Mesh struct {
 	EBO      uint32
 
 	AttrMask uint32
-	Offsets  [5]int
+	Offsets  [6]int
 }
 
 type Model struct {
