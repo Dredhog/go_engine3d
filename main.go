@@ -57,7 +57,7 @@ func main() {
 	version := gl.GoStr(gl.GetString(gl.VERSION))
 	fmt.Println("OpenGL version", version)
 
-	model, err := collada.ParseModel("data/model/t_skinned.dae")
+	model, err := collada.ParseModel("data/model/turner_skinned.dae")
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -89,8 +89,8 @@ func main() {
 
 		modelMatrix := mgl32.Ident4()
 		projection := mgl32.Perspective(math.Pi/4, 1.6, 0.1, 100.0)
-		playerPos := mgl32.Vec3{0, 1, 2}
-		lightPos := mgl32.Vec3{0, 2, 0}
+		playerPos := mgl32.Vec3{0, 1.2, 6}
+		lightPos := mgl32.Vec3{0, 1, 2}
 		var angle0, angle1, angle2, angle3, angle4, angle5, angle6, angle7 float32
 		t0 := time.Now()
 		startTime := t0
@@ -104,18 +104,18 @@ func main() {
 			handleInput(window, &playerPos, &lightPos, &angle0, &angle1, &angle2, &angle3, &angle4, &angle5, &angle6, &angle7)
 
 			//UPDATE VARIABLES
-			camera := mgl32.LookAtV(playerPos, playerPos.Add(mgl32.Vec3{0, -0.5, -3}), mgl32.Vec3{0, 1, 0})
+			camera := mgl32.LookAtV(playerPos, playerPos.Add(mgl32.Vec3{0, -1, -6}), mgl32.Vec3{0, 1, 0})
 			mvpMatrix := projection.Mul4(camera)
 
 			if err := model.Skeleton.CalculateFinalTransformations(
 				anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, angle0}},
 				anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, angle1}},
 				anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, angle2}},
-				//anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, angle3}},
-				// anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, angle4}},
-				// anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, angle5}},
-				// anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, angle6}},
-				// anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, angle7}},
+				anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, angle3}},
+				anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, angle4}},
+				anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, angle5}},
+				anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, angle6}},
+				anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, angle7}},
 			); err != nil {
 				panic(err)
 			}

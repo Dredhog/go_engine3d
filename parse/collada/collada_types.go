@@ -109,10 +109,11 @@ type controller struct {
 }
 
 type skin struct {
-	Source        string        `xml:"source,attr"`
-	Sources       []source      `xml:"source"`
-	Joints        joints        `xml:"joints"`
-	VertexWeights vertexWeights `xml:"vertex_weights"`
+	BindShapeMatrix string        `xml:"bind_shape_matrix"`
+	Source          string        `xml:"source,attr"`
+	Sources         []source      `xml:"source"`
+	Joints          joints        `xml:"joints"`
+	VertexWeights   vertexWeights `xml:"vertex_weights"`
 }
 
 type joints struct {

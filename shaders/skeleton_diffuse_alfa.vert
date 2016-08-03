@@ -17,9 +17,9 @@ out vec3 Color;
 
 void main()
 {
-	Position = (model_mat * vec4(position, 1.0)).xyz;
-	Normal = normalize(normal);
+	Position = ((weights.x*bone_mat[int(bones.x)] + weights.y*bone_mat[int(bones.y)]) * vec4(position, 1.0)).xyz;
+	Normal = normalize(((transpose(inverse(weights.x*bone_mat[int(bones.x)]))) * vec4(normal, 0.0)).xyz);
 	TexCoord = texCoord;
 	Color = color;
-	gl_Position = mvp_mat * model_mat * (weights.x*bone_mat[int(bones.x)] + weights.y*bone_mat[int(bones.y)]) * vec4(position, 1.0);
+	gl_Position = mvp_mat * (weights.x*bone_mat[int(bones.x)] + weights.y*bone_mat[int(bones.y)]) * vec4(position, 1.0);
 }

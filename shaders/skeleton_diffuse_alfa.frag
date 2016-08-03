@@ -20,7 +20,7 @@ void main()
 	float light_inverse_squared = 10/ligth_dist_squared;
 	float light_squared_norm = (light_inverse_squared < 1) ? light_inverse_squared : 1;  
 	
-	//light surface bounce effect
+	//Phong light diffuse and alfa effect
 	float light_dot_normal = dot(normalize(light_position - Position), Normal);
 	float diffuse_alfa = max(light_dot_normal, 0.2);
 

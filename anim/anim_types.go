@@ -13,20 +13,20 @@ type Transform struct {
 }
 
 type Bone struct {
-	Transform         //The transformation relative to the parent
-	Name              string
-	InverseBindMatrix mgl32.Mat4
-	Index             int
-	ParentIndex       int
-	LocalSet          bool
-	FinalSet          bool
+	Name                string
+	Index               int
+	ParentIndex         int
+	BindPose            mgl32.Mat4
+	InverseBindPose     mgl32.Mat4
+	IndividualTransform mgl32.Mat4
+	FinalSet            bool
 }
 
 type Skeleton struct {
 	Transform
 	RootIndex            int
 	Bones                []Bone
-	localTransformations []mgl32.Mat4
+	BindShapeMatrix      mgl32.Mat4
 	FinalTransformations []mgl32.Mat4
 }
 

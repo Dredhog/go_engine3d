@@ -9,6 +9,8 @@ import (
 	"strings"
 	"training/engine/anim"
 	"training/engine/types"
+
+	"github.com/go-gl/mathgl/mgl32"
 )
 
 func Parse(relativePath string) (collada, error) {
@@ -228,6 +230,13 @@ func extractSkeleton(skin *skin, libraryVisualScenes *libraryVisualScenes) (*ani
 	if err != nil {
 		return nil, fmt.Errorf("collada: skeleton: getting inv bind matrices %v", err)
 	}
+	bindShapeFloats, err := stringToFloatArray(skin.BindShapeMatrix)
+	if err != nil {
+		return nil, fmt.Errorf("collada: skeleton: getting bind shape matrix %v", err)
+	}
+	bindShapeArray := [16]float32{}
+	copy(bindShapeArray[:], bindShapeFloats)
+	bindShapeMatrix := mgl32.Mat4(bindShapeArray)
 
 	for i, name := range boneNames {
 		sidToInvBindMat[name] = invBindMatriceFloats[i*16 : (i+1)*16]
@@ -243,9 +252,9 @@ func extractSkeleton(skin *skin, libraryVisualScenes *libraryVisualScenes) (*ani
 	for _, node := range armature.Nodes {
 		if node.Type == "JOINT" {
 			bones := make([]anim.Bone, len(boneNames))
-			registerBoneAndItsChildren(bones, &node, sidToIndex[node.Name], sidToIndex, sidToInvBindMat)
+			registerBoneAndItsChildren(bones, &node, sidToIndex[node.Name], bindShapeMatrix, sidToIndex, sidToInvBindMat)
 
-			skeleton := anim.NewSkeleton(bones)
+			skeleton := anim.NewSkeleton(bones, bindShapeMatrix, sidToIndex[node.Sid])
 			skeleton.RootIndex = sidToIndex[node.Name]
 			return skeleton, nil
 		}
@@ -253,13 +262,16 @@ func extractSkeleton(skin *skin, libraryVisualScenes *libraryVisualScenes) (*ani
 	return nil, fmt.Errorf("collada: no root node found in skeleton data")
 }
 
-func registerBoneAndItsChildren(bones []anim.Bone, currentNode *node, parentIndex int, sidToIndex map[string]int, sidToInvBindMat map[string][]float32) {
+func registerBoneAndItsChildren(bones []anim.Bone, currentNode *node, parentIndex int, bindShape mgl32.Mat4, sidToIndex map[string]int, sidToInvBindMat map[string][]float32) {
 	currentIndex := sidToIndex[currentNode.Sid]
 	bones[currentIndex].Name = currentNode.Name
 	bones[currentIndex].Index = sidToIndex[currentNode.Sid]
 	bones[currentIndex].ParentIndex = parentIndex
-	copy(bones[currentIndex].InverseBindMatrix[:], sidToInvBindMat[currentNode.Sid])
+
+	copy(bones[currentIndex].InverseBindPose[:], sidToInvBindMat[currentNode.Sid])
+	bones[currentIndex].InverseBindPose = bones[currentIndex].InverseBindPose.Transpose().Mul4(bindShape.Transpose())
+	bones[currentIndex].BindPose = bones[currentIndex].InverseBindPose.Inv()
 	for _, node := range currentNode.Nodes {
-		registerBoneAndItsChildren(bones, &node, sidToIndex[currentNode.Sid], sidToIndex, sidToInvBindMat)
+		registerBoneAndItsChildren(bones, &node, sidToIndex[currentNode.Sid], bindShape, sidToIndex, sidToInvBindMat)
 	}
 }
