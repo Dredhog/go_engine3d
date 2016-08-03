@@ -13,20 +13,20 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 )
 
-func Parse(relativePath string) (collada, error) {
+func Parse(relativePath string) (*collada, error) {
 	workingDir, err := os.Getwd()
 	if err != nil {
-		return collada{}, fmt.Errorf("parse collada: absolute path error: %v\n", err)
+		return nil, fmt.Errorf("parse collada: absolute path error: %v\n", err)
 	}
 	colladaBytes, err := ioutil.ReadFile(workingDir + "/" + relativePath)
 	if err != nil {
-		return collada{}, fmt.Errorf("parse collada: %v\n", err)
+		return nil, fmt.Errorf("parse collada: %v\n", err)
 	}
 	var coll collada
 	if err := xml.Unmarshal(colladaBytes, &coll); err != nil {
-		return collada{}, fmt.Errorf("parse collada: %v\n", err)
+		return nil, fmt.Errorf("parse collada: %v\n", err)
 	}
-	return coll, nil
+	return &coll, nil
 }
 
 func stringToFloatArray(str string) ([]float32, error) {
@@ -272,6 +272,8 @@ func registerBoneAndItsChildren(bones []anim.Bone, currentNode *node, parentInde
 	bones[currentIndex].InverseBindPose = bones[currentIndex].InverseBindPose.Transpose().Mul4(bindShape.Transpose())
 	bones[currentIndex].BindPose = bones[currentIndex].InverseBindPose.Inv()
 	for _, node := range currentNode.Nodes {
-		registerBoneAndItsChildren(bones, &node, sidToIndex[currentNode.Sid], bindShape, sidToIndex, sidToInvBindMat)
+		if node.Type == "JOINT" {
+			registerBoneAndItsChildren(bones, &node, sidToIndex[currentNode.Sid], bindShape, sidToIndex, sidToInvBindMat)
+		}
 	}
 }

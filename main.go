@@ -27,8 +27,6 @@ const (
 	screenWidth  = 1920
 	screenHeight = 1080
 	fps          = 122
-	w            = 1
-	h            = 1
 )
 
 func main() {
@@ -68,8 +66,8 @@ func main() {
 	}
 	//Game loop function
 	func(window *glfw.Window, shaderProgram uint32) {
-		//gl.Enable(gl.CULL_FACE)
-		//gl.CullFace(gl.BACK)
+		gl.Enable(gl.CULL_FACE)
+		gl.CullFace(gl.BACK)
 		gl.Enable(gl.DEPTH_TEST)
 		gl.DepthFunc(gl.LESS)
 		gl.ClearColor(0.3, 0.3, 0.4, 1.0)
@@ -213,5 +211,18 @@ func handleInput(window *glfw.Window, playerPos *mgl32.Vec3, lightPos *mgl32.Vec
 	}
 	if pressedShift {
 		navigationSpeed *= -1
+	}
+	//Reset Everything
+	if window.GetKey(glfw.KeyR) == glfw.Press {
+		*angle0 = 0
+		*angle1 = 0
+		*angle2 = 0
+		*angle3 = 0
+		*angle4 = 0
+		*angle5 = 0
+		*angle6 = 0
+		*angle7 = 0
+		*angle1 = 0
+		*lightPos = mgl32.Vec3{0, 1, 2}
 	}
 }
