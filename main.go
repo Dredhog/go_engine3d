@@ -26,7 +26,7 @@ func init() {
 const (
 	screenWidth  = 1920
 	screenHeight = 1080
-	fps          = 122
+	fps          = 2000
 )
 
 func main() {
@@ -64,13 +64,14 @@ func main() {
 	if err != nil {
 		log.Fatalln(err)
 	}
+
 	//Game loop function
 	func(window *glfw.Window, shaderProgram uint32) {
 		gl.Enable(gl.CULL_FACE)
 		gl.CullFace(gl.BACK)
 		gl.Enable(gl.DEPTH_TEST)
 		gl.DepthFunc(gl.LESS)
-		gl.ClearColor(0.3, 0.3, 0.4, 1.0)
+		gl.ClearColor(0.2, 0.3, 0.5, 1.0)
 
 		rabbitDiffuse, err := texture.NewTexture("baboon.png")
 		if err != nil {
@@ -95,6 +96,26 @@ func main() {
 		frameTime := time.Second / fps
 		frames := 0
 		seconds := 0
+		firstKeyframe := anim.Keyframe{Transforms: []anim.Transform{
+			anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
+			anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
+			anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
+			anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
+			anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
+			anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
+			anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
+			anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}}}}
+		secondKeyframe := anim.Keyframe{Transforms: []anim.Transform{
+			anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
+			anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 30}},
+			anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 30}},
+			anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 30}},
+			anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 30}},
+			anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, -30}},
+			anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, -30}},
+			anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, -30}}}}
+		t := float32(0)
+		increment := 1 / float32(fps)
 
 		for !window.ShouldClose() {
 			//Get input
@@ -104,17 +125,16 @@ func main() {
 			//UPDATE VARIABLES
 			camera := mgl32.LookAtV(playerPos, playerPos.Add(mgl32.Vec3{0, -1, -6}), mgl32.Vec3{0, 1, 0})
 			mvpMatrix := projection.Mul4(camera)
-
-			if err := model.Skeleton.CalculateFinalTransformations(
-				anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, angle0}},
-				anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, angle1}},
-				anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, angle2}},
-				anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, angle3}},
-				anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, angle4}},
-				anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, angle5}},
-				anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, angle6}},
-				anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, angle7}},
-			); err != nil {
+			t += increment
+			if t >= 1 || t < 0 {
+				increment *= -1
+			}
+			interpolatedKeyframe, err := anim.InterpolateKeyframe(&firstKeyframe, &secondKeyframe, t)
+			if err != nil {
+				panic(err)
+			}
+			err = model.Skeleton.DisplayKeyframe(interpolatedKeyframe)
+			if err != nil {
 				panic(err)
 			}
 
@@ -142,6 +162,7 @@ func main() {
 			gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 			model.Mesh.Draw()
 			window.SwapBuffers()
+
 		}
 	}(window, shaderProgram)
 }

@@ -2,12 +2,6 @@ package types
 
 import "training/engine/anim"
 
-type Vertex struct {
-	Position [3]float32
-	Normal   [3]float32
-	Color    [3]float32
-}
-
 type Texture struct {
 	Id      uint32
 	TexType string
@@ -36,4 +30,5 @@ type Mesh struct {
 type Model struct {
 	Mesh     *Mesh
 	Skeleton *anim.Skeleton
+	Animator *anim.Animator
 }

@@ -6,22 +6,6 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 )
 
-type Transform struct {
-	Scale       [3]float32
-	Translation [3]float32
-	Rotation    [3]float32
-}
-
-type Bone struct {
-	Name                string
-	Index               int
-	ParentIndex         int
-	BindPose            mgl32.Mat4
-	InverseBindPose     mgl32.Mat4
-	IndividualTransform mgl32.Mat4
-	FinalSet            bool
-}
-
 type Skeleton struct {
 	Transform
 	RootIndex            int
@@ -30,17 +14,37 @@ type Skeleton struct {
 	FinalTransformations []mgl32.Mat4
 }
 
-type BoneState struct {
-	BoneIndex int
-	Transform
+type Bone struct {
+	Name             string
+	Index            int
+	ParentIndex      int
+	BindPose         mgl32.Mat4
+	InverseBindPose  mgl32.Mat4
+	IndividualMatrix mgl32.Mat4
+	CumulativeSet    bool
 }
 
-type KeyFrame struct {
-	BoneStates []BoneState
-	Duration   time.Duration
+type Animator struct {
+	Animations      []Animation
+	CurrenAnimIndex int
+	NextAnimIndex   int
+	LastKeyIndex    int
+	NextKeyIndex    int
+	timeElapsed     time.Duration
 }
 
 type Animation struct {
-	KeyFrames     []KeyFrame
+	Keyframes     []Keyframe
 	TotalDuration time.Duration
+}
+
+type Keyframe struct {
+	Transforms []Transform
+	Duration   time.Duration
+}
+
+type Transform struct {
+	Scale       [3]float32
+	Translation [3]float32
+	Rotation    [3]float32
 }
