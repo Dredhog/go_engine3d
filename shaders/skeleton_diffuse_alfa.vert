@@ -1,4 +1,4 @@
-#version 410
+#version 330
 
 uniform mat4 mvp_mat;
 uniform mat4 model_mat;

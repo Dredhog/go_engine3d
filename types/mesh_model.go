@@ -1,6 +1,6 @@
 package types
 
-import "github.com/go-gl/gl/v4.1-core/gl"
+import "github.com/go-gl/gl/v3.3-core/gl"
 
 func (m *Mesh) Init(floats []float32, indices []uint32, attrMask uint32, offsets [6]int, textures []Texture) {
 	m.Floats = floats
