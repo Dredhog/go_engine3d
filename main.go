@@ -18,8 +18,6 @@ import (
 )
 
 func init() {
-	// This is needed to arrange that main() runs on main thread.
-	// See documentation for functions that are only allowed to be called from the main thread.
 	runtime.LockOSThread()
 }
 
@@ -96,7 +94,7 @@ func main() {
 		frameTime := time.Second / fps
 		frames := 0
 		seconds := 0
-		firstKeyframe := anim.Keyframe{Transforms: []anim.Transform{
+		firstKeyframe := anim.Keyframe{Ticks: 0, Transforms: []anim.Transform{
 			anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
 			anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
 			anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
@@ -105,7 +103,7 @@ func main() {
 			anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
 			anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
 			anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}}}}
-		secondKeyframe := anim.Keyframe{Transforms: []anim.Transform{
+		secondKeyframe := anim.Keyframe{Ticks: 30, Transforms: []anim.Transform{
 			anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
 			anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 30}},
 			anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 30}},
@@ -114,26 +112,65 @@ func main() {
 			anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, -30}},
 			anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, -30}},
 			anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, -30}}}}
-		t := float32(0)
-		increment := 1 / float32(fps)
+		thirdKeyframe := anim.Keyframe{Ticks: 120, Transforms: []anim.Transform{
+			anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
+			anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
+			anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
+			anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
+			anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
+			anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
+			anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
+			anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}}}}
+		fourthKeyframe := anim.Keyframe{Ticks: 180, Transforms: []anim.Transform{
+			anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
+			anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, -30}},
+			anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 30}},
+			anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, -30}},
+			anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 30}},
+			anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, -30}},
+			anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, -30}},
+			anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, -30}}}}
+		fifthKeyframe := anim.Keyframe{Ticks: 200, Transforms: []anim.Transform{
+			anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
+			anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
+			anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
+			anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
+			anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
+			anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
+			anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
+			anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}}}}
+		walkAnimation := anim.Animation{Keyframes: []anim.Keyframe{firstKeyframe, secondKeyframe, thirdKeyframe, fourthKeyframe, fifthKeyframe}}
+		walkAnimation.SetTotalTicks()
+		ticks := float32(0)
 
 		for !window.ShouldClose() {
+			//FPS: update, maintain, display
+			frames++
+			time.Sleep(frameTime - time.Since(startTime))
+			if int(time.Since(t0)/time.Second) > seconds {
+				seconds++
+				fmt.Println("fps:", frames)
+				frames = 0
+			}
+			startTime = time.Now()
+
 			//Get input
 			glfw.PollEvents()
 			handleInput(window, &playerPos, &lightPos, &angle0, &angle1, &angle2, &angle3, &angle4, &angle5, &angle6, &angle7)
 
 			//UPDATE VARIABLES
+			ticks += 50/float32(fps)
 			camera := mgl32.LookAtV(playerPos, playerPos.Add(mgl32.Vec3{0, -1, -6}), mgl32.Vec3{0, 1, 0})
 			mvpMatrix := projection.Mul4(camera)
-			t += increment
-			if t >= 1 || t < 0 {
-				increment *= -1
-			}
-			interpolatedKeyframe, err := anim.InterpolateKeyframe(&firstKeyframe, &secondKeyframe, t)
 			if err != nil {
 				panic(err)
 			}
-			err = model.Skeleton.DisplayKeyframe(interpolatedKeyframe)
+
+			sampledAnimationKeyframe, err := walkAnimation.LoopedLinearSample(ticks)
+			if err != nil {
+				panic(err)
+			}
+			err = model.Skeleton.ApplyKeyframe(sampledAnimationKeyframe)
 			if err != nil {
 				panic(err)
 			}
@@ -142,27 +179,13 @@ func main() {
 			gl.UniformMatrix4fv(mvpUniform, 1, false, &mvpMatrix[0])
 			gl.UniformMatrix4fv(modelUniform, 1, false, &modelMatrix[0])
 			gl.Uniform3f(lightPosUniform, lightPos[0], lightPos[1], lightPos[2])
-			gl.UniformMatrix4fv(boneUniforms, 8, false, &model.Skeleton.FinalTransformations[0][0])
+			gl.UniformMatrix4fv(boneUniforms, 8, false, &model.Skeleton.FinalMatrices[0][0])
 
 			gl.UseProgram(shaderProgram)
-
-			//FPS: update, maintain, display
-			frames++
-			time.Sleep(frameTime - time.Since(startTime))
-			if int(time.Since(t0)/time.Second) > seconds {
-				seconds++
-				fmt.Println("FinalTransforms")
-				fmt.Println(model.Skeleton.FinalTransformations)
-				fmt.Println("fps:", frames)
-				frames = 0
-			}
-			startTime = time.Now()
-
 			//Perform rendering
 			gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 			model.Mesh.Draw()
 			window.SwapBuffers()
-
 		}
 	}(window, shaderProgram)
 }

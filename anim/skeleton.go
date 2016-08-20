@@ -8,11 +8,11 @@ import (
 
 func NewSkeleton(bones []Bone, bindShapeMatrix mgl32.Mat4, rootIndex int) *Skeleton {
 	s := Skeleton{Bones: bones, BindShapeMatrix: bindShapeMatrix, RootIndex: rootIndex}
-	s.FinalTransformations = make([]mgl32.Mat4, len(bones))
+	s.FinalMatrices = make([]mgl32.Mat4, len(bones))
 	return &s
 }
 
-func (s *Skeleton) DisplayKeyframe(keyframe *Keyframe) error {
+func (s *Skeleton) ApplyKeyframe(keyframe *Keyframe) error {
 	if len(keyframe.Transforms) != len(s.Bones) {
 		return fmt.Errorf("anim: Wrong number of transforms for skeleton in keyframe. expected %v, but got %v", len(s.Bones), len(keyframe.Transforms))
 	}
@@ -31,15 +31,15 @@ func (s *Skeleton) DisplayKeyframe(keyframe *Keyframe) error {
 func (s *Skeleton) CalcCumulativeBoneMatrix(boneIndex int) mgl32.Mat4 {
 	b := &s.Bones[boneIndex]
 	if b.Index == s.RootIndex {
-		s.FinalTransformations[b.Index] = b.IndividualMatrix
+		s.FinalMatrices[b.Index] = b.IndependentMatrix
 	} else if !b.CumulativeSet {
-		s.FinalTransformations[b.Index] = s.CalcCumulativeBoneMatrix(b.ParentIndex).Mul4(b.IndividualMatrix)
+		s.FinalMatrices[b.Index] = s.CalcCumulativeBoneMatrix(b.ParentIndex).Mul4(b.IndependentMatrix)
 		b.CumulativeSet = true
 	}
-	return s.FinalTransformations[b.Index]
+	return s.FinalMatrices[b.Index]
 }
 
 func (b *Bone) SetIndependentBoneMatrix(transform Transform, bindShape mgl32.Mat4) {
 	transformation := TransformToMat4(transform)
-	b.IndividualMatrix = b.BindPose.Mul4(transformation.Mul4(b.InverseBindPose))
+	b.IndependentMatrix = b.BindPose.Mul4(transformation.Mul4(b.InverseBindPose))
 }

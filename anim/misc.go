@@ -1,8 +1,6 @@
 package anim
 
 import (
-	"fmt"
-
 	"github.com/go-gl/mathgl/mgl32"
 )
 
@@ -15,18 +13,15 @@ func TransformToMat4(t Transform) mgl32.Mat4 {
 	return rotateZ.Mul4(rotateY.Mul4(rotateX)) //translate.Mul4(scale.Mul4(rotate))
 }
 
-func InterpolateTransform(first, second *Transform, t float32) *Transform {
+func LerpTransform(first, second *Transform, t float32) *Transform {
 	result := Transform{Rotation: [3]float32{first.Rotation[0]*(1-t) + second.Rotation[0]*t, first.Rotation[1]*(1-t) + second.Rotation[1]*t, first.Rotation[2]*(1-t) + second.Rotation[2]*t}}
 	return &result
 }
 
-func InterpolateKeyframe(first, second *Keyframe, t float32) (*Keyframe, error) {
-	if len(first.Transforms) != len(second.Transforms) {
-		return nil, fmt.Errorf("anim: mismatched keyframes when interpolating, first has %v, second has %v transforms", len(first.Transforms), len(second.Transforms))
-	}
+func LerpKeyframe(first, second *Keyframe, t float32) *Keyframe {
 	result := Keyframe{Transforms: make([]Transform, len(first.Transforms))}
 	for i := 0; i < len(first.Transforms); i++ {
-		result.Transforms[i] = *InterpolateTransform(&first.Transforms[i], &second.Transforms[i], t)
+		result.Transforms[i] = *LerpTransform(&first.Transforms[i], &second.Transforms[i], t)
 	}
-	return &result, nil
+	return &result
 }
