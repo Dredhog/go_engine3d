@@ -254,6 +254,13 @@ func handleInput(window *glfw.Window, deltaTime float32, playerPos *mgl32.Vec3, 
 	} else if window.GetKey(glfw.KeyRight) == glfw.Press {
 		lightPos[0] += 5 * navigationSpeed
 	}
+	//reset ligth position
+	if window.GetKey(glfw.KeyR) == glfw.Press {
+		lightPos[0] = 0
+		lightPos[1] = 1
+		lightPos[2] = 2
+	}
+	//Animation blending
 	 if window.GetKey(glfw.Key0) == glfw.Press{
 		*t -= 2 * deltaTime
 	}
