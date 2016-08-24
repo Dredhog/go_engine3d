@@ -24,7 +24,7 @@ func init() {
 const (
 	screenWidth  = 1920
 	screenHeight = 1080
-	fps          = 60
+	fps          = 244
 )
 
 func main() {
@@ -34,12 +34,12 @@ func main() {
 	}
 	defer glfw.Terminate()
 
- 	//Set up the display window
- 	glfw.WindowHint(glfw.ContextVersionMajor, 3)
+	//Set up the display window
+	glfw.WindowHint(glfw.ContextVersionMajor, 3)
 	glfw.WindowHint(glfw.ContextVersionMinor, 3)
 	glfw.WindowHint(glfw.OpenGLProfile, glfw.OpenGLCoreProfile)
 	glfw.WindowHint(glfw.OpenGLForwardCompatible, glfw.True)
-	window, err := glfw.CreateWindow(screenWidth, screenHeight, "Opengl", nil, nil)
+	window, err := glfw.CreateWindow(screenWidth, screenHeight, "Opengl", glfw.GetPrimaryMonitor(), nil)
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -92,7 +92,7 @@ func main() {
 		cameraDirection := mgl32.Vec3{0, -1, -6}
 		camera := mgl32.LookAtV(cameraPosition, cameraPosition.Add(cameraDirection), mgl32.Vec3{0, 1, 0})
 		mvpMatrix := projection.Mul4(camera)
-		player := player{Position: mgl32.Vec3{0, 0, 0}, Velocity: mgl32.Vec3{0, 0, 0}, TiltAngle: -0.2, Angle: 0}
+		player := player{Direction: mgl32.Vec3{0, 0, 1}, Angle: 0}
 		lightPosition := mgl32.Vec3{0, 1, 2}
 		forward := mgl32.Vec3{0, 0, -1}
 		left := mgl32.Vec3{-1, 0, 0}
@@ -115,7 +115,7 @@ func main() {
 		for !window.ShouldClose() {
 			//Get input
 			glfw.PollEvents()
-			handleInput(window, deltaTime, &player, &lightPosition, &forward, &left, &t)
+			handleInput(window, deltaTime, &player, &lightPosition, &forward, &left, &zAxis, &t)
 
 			deltaTime = float32(glfw.GetTime() - frameStart)
 			if deltaTime < frameTime {
@@ -125,14 +125,7 @@ func main() {
 			frameStart = glfw.GetTime()
 
 			//update variables
-			player.Angle = float32(math.Acos(float64(player.Velocity.Normalize().Dot(zAxis))))
-			if player.Velocity.Len() == 0 {
-				player.Angle = 0
-			}
-			if player.Velocity[0] < 0 {
-				player.Angle *= -1
-			}
-			tiltAxis := player.AccDirection.Cross(NegYAxis)
+			tiltAxis := player.Direction.Cross(NegYAxis)
 			modelRotationMatrix = toComMatrix.Mul4(mgl32.HomogRotate3D(player.TiltAngle, tiltAxis).Mul4(mgl32.HomogRotate3DY(player.Angle).Mul4(toComInvMatrix)))
 			modelMatrix = mgl32.Translate3D(player.Position[0], player.Position[1], player.Position[2]).Mul4(modelRotationMatrix)
 			ticks += 50 * deltaTime
@@ -161,7 +154,8 @@ func main() {
 				seconds++
 				fmt.Println("fps:", frames)
 				fmt.Printf("ticks:\t%v; t\t%v\n", ticks, t)
-				fmt.Println(modelMatrix)
+				radToDeg := 180/float32(math.Pi)
+				fmt.Printf("theta: %v; Destination: %v; CurrentAngle: %v\n", radToDeg*(player.DestAngle - player.Angle), radToDeg*player.DestAngle, radToDeg*player.Angle)
 				frames = 0
 			}
 
@@ -178,63 +172,90 @@ type player struct {
 	Position     mgl32.Vec3
 	Velocity     mgl32.Vec3
 	Acceleration mgl32.Vec3
-	AccDirection mgl32.Vec3
 	TiltAngle    float32
+	Direction    mgl32.Vec3
+	DestAngle    float32
 	Angle        float32
 }
 
 //Input function
-func handleInput(window *glfw.Window, deltaTime float32, player *player, lightPosition, forward, left *mgl32.Vec3, t *float32) {
+func handleInput(window *glfw.Window, deltaTime float32, player *player, lightPosition, forward, left, zAxis *mgl32.Vec3, t *float32) {
 	var lightSpeed float32 = 5 * deltaTime
-	var maxSpeed float32 = 3
-	var maxTiltAngle float32 = 0.25
-	var tiltSpeed float32 = 0.6
-	var acc float32 = 10
+	//var maxTiltAngle float32 = 0.25
+	//var tiltSpeed float32 = 0.6
+	var maxSpeed float32 = 4
+	var angularVelocity float32 = 9
+	var acc float32 = 20
+	var deacc float32 = 10
 
 	//Pressing space to exit
 	if window.GetKey(glfw.KeySpace) == glfw.Press {
 		window.SetShouldClose(true)
 	}
 
-	//CHARACTER MOTION
-	directionPressed := false
+	//PLAYER MOTION
+	player.Acceleration = mgl32.Vec3{}
 	if window.GetKey(glfw.KeyW) == glfw.Press {
-		player.Acceleration = player.Acceleration.Add(forward.Mul(deltaTime))
-		directionPressed = true
+		player.Acceleration = player.Acceleration.Add(*forward)
 	}
 	if window.GetKey(glfw.KeyS) == glfw.Press {
-		player.Acceleration = player.Acceleration.Add(forward.Mul(-1 * deltaTime))
-		directionPressed = true
+		player.Acceleration = player.Acceleration.Add(forward.Mul(-1))
 	}
 	if window.GetKey(glfw.KeyA) == glfw.Press {
-		player.Acceleration = player.Acceleration.Add(left.Mul(deltaTime))
-		directionPressed = true
+		player.Acceleration = player.Acceleration.Add(*left)
 	}
 	if window.GetKey(glfw.KeyD) == glfw.Press {
-		player.Acceleration = player.Acceleration.Add(left.Mul(-1 * deltaTime))
-		directionPressed = true
+		player.Acceleration = player.Acceleration.Add(left.Mul(-1))
 	}
-	if directionPressed && player.Acceleration.Len() > 0.0001 {
-		player.TiltAngle += tiltSpeed * deltaTime
-		player.Acceleration = player.Acceleration.Normalize()
-		player.AccDirection = player.Acceleration
-		player.Velocity = player.Velocity.Add(player.Acceleration.Mul(deltaTime * acc))
+	if player.Acceleration.Len() != 0 {
+		player.Velocity = player.Velocity.Add(player.Acceleration.Normalize().Mul(deltaTime * acc))
+	} else if player.Velocity.Len() >= deltaTime*deacc {
+		player.Velocity = player.Velocity.Sub(player.Velocity.Normalize().Mul(deltaTime * deacc))
 	} else {
-		player.Acceleration = mgl32.Vec3{}
-		player.TiltAngle -= tiltSpeed * deltaTime
+		player.Velocity[0] = 0
+		player.Velocity[1] = 0
+		player.Velocity[2] = 0
 	}
-	//Limit the player velocity
+	//Limit the player's velocity
 	if speed := player.Velocity.Len(); speed > maxSpeed {
-		player.TiltAngle -= tiltSpeed * deltaTime
-		player.Velocity = player.Velocity.Mul((1 / speed) * maxSpeed)
+		player.Velocity = player.Velocity.Normalize().Mul(maxSpeed)
 	}
-	if player.TiltAngle >= maxTiltAngle {
-		player.TiltAngle = maxTiltAngle
-	} else if player.TiltAngle < 0 {
-		player.TiltAngle = 0
-	}
+	//Update the player's position
 	player.Position = player.Position.Add(player.Velocity.Mul(deltaTime))
 
+	//Determine the player's orientation
+	if player.Velocity.Len() != 0 {
+		player.Direction = player.Velocity.Normalize()
+	}
+	player.DestAngle = float32(math.Acos(float64(player.Direction.Dot(*zAxis))))
+	if player.Direction[0] < 0 {
+		player.DestAngle = 1*-player.DestAngle + float32(2*math.Pi)
+	}
+	if player.Angle < 0 {
+		player.Angle += float32(2*math.Pi)
+	}else if player.Angle > float32(2*math.Pi){
+		player.Angle -= float32(2*math.Pi)
+	}
+	dtr := float32(math.Pi/180)
+	if delta := player.DestAngle - player.Angle; delta > 0{
+		switch {
+		case delta < 180*dtr:
+			if player.Angle + angularVelocity * deltaTime < player.DestAngle{
+				player.Angle += angularVelocity * deltaTime
+			}
+		case delta < 360*dtr:
+			player.Angle -= angularVelocity * deltaTime
+		}
+	}else{
+		switch{
+		case -180*dtr < delta:
+			if player.Angle - angularVelocity * deltaTime > player.DestAngle{
+				player.Angle -= angularVelocity * deltaTime
+			}
+		case -360*dtr < delta:
+			player.Angle += angularVelocity * deltaTime
+		}
+	}
 	//LIGHT MOTION
 	if window.GetKey(glfw.KeyUp) == glfw.Press {
 		lightPosition[2] -= 5 * lightSpeed
@@ -246,7 +267,7 @@ func handleInput(window *glfw.Window, deltaTime float32, player *player, lightPo
 	} else if window.GetKey(glfw.KeyRight) == glfw.Press {
 		lightPosition[0] += 5 * lightSpeed
 	}
-	//reset ligth position
+	//RESET BUTTON
 	if window.GetKey(glfw.KeyR) == glfw.Press {
 		lightPosition[0] = 0
 		lightPosition[1] = 1
@@ -257,6 +278,9 @@ func handleInput(window *glfw.Window, deltaTime float32, player *player, lightPo
 		player.Velocity[0] = 0
 		player.Velocity[1] = 0
 		player.Velocity[2] = 0
+		player.Direction[0] = 0
+		player.Direction[1] = 0
+		player.Direction[2] = 1
 	}
 	//ANIMATION BLENDING
 	if window.GetKey(glfw.Key0) == glfw.Press {
