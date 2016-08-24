@@ -2,19 +2,19 @@ package main
 
 import (
 	"fmt"
+	"github.com/go-gl/gl/v3.3-core/gl"
+	"github.com/go-gl/glfw/v3.1/glfw"
+	"github.com/go-gl/mathgl/mgl32"
 	"log"
 	"math"
 	"runtime"
 	"time"
+
 	"training/engine/anim"
 	"training/engine/load/shader"
 	"training/engine/load/texture"
 	"training/engine/parse/collada"
 	"training/engine/types"
-
-	"github.com/go-gl/gl/v3.3-core/gl"
-	"github.com/go-gl/glfw/v3.1/glfw"
-	"github.com/go-gl/mathgl/mgl32"
 )
 
 func init() {
@@ -34,8 +34,8 @@ func main() {
 	}
 	defer glfw.Terminate()
 
-	//Set up the display window
-	glfw.WindowHint(glfw.ContextVersionMajor, 3)
+ 	//Set up the display window
+ 	glfw.WindowHint(glfw.ContextVersionMajor, 3)
 	glfw.WindowHint(glfw.ContextVersionMinor, 3)
 	glfw.WindowHint(glfw.OpenGLProfile, glfw.OpenGLCoreProfile)
 	glfw.WindowHint(glfw.OpenGLForwardCompatible, glfw.True)
@@ -178,8 +178,8 @@ type player struct {
 	Position     mgl32.Vec3
 	Velocity     mgl32.Vec3
 	Acceleration mgl32.Vec3
-	AccDirection    mgl32.Vec3
-	TiltAngle      float32
+	AccDirection mgl32.Vec3
+	TiltAngle    float32
 	Angle        float32
 }
 
@@ -187,9 +187,9 @@ type player struct {
 func handleInput(window *glfw.Window, deltaTime float32, player *player, lightPosition, forward, left *mgl32.Vec3, t *float32) {
 	var lightSpeed float32 = 5 * deltaTime
 	var maxSpeed float32 = 3
-	var maxTiltAngle float32 = 0.3
+	var maxTiltAngle float32 = 0.25
 	var tiltSpeed float32 = 0.6
-	var acc float32 = 5
+	var acc float32 = 10
 
 	//Pressing space to exit
 	if window.GetKey(glfw.KeySpace) == glfw.Press {
@@ -199,27 +199,27 @@ func handleInput(window *glfw.Window, deltaTime float32, player *player, lightPo
 	//CHARACTER MOTION
 	directionPressed := false
 	if window.GetKey(glfw.KeyW) == glfw.Press {
-		player.Acceleration = player.Acceleration.Add(*forward)
+		player.Acceleration = player.Acceleration.Add(forward.Mul(deltaTime))
 		directionPressed = true
 	}
 	if window.GetKey(glfw.KeyS) == glfw.Press {
-		player.Acceleration = player.Acceleration.Add(forward.Mul(-1))
+		player.Acceleration = player.Acceleration.Add(forward.Mul(-1 * deltaTime))
 		directionPressed = true
 	}
 	if window.GetKey(glfw.KeyA) == glfw.Press {
-		player.Acceleration = player.Acceleration.Add(*left)
+		player.Acceleration = player.Acceleration.Add(left.Mul(deltaTime))
 		directionPressed = true
 	}
 	if window.GetKey(glfw.KeyD) == glfw.Press {
-		player.Acceleration = player.Acceleration.Add(left.Mul(-1))
+		player.Acceleration = player.Acceleration.Add(left.Mul(-1 * deltaTime))
 		directionPressed = true
 	}
-	if directionPressed && player.Acceleration.Len() > 0.0001{
+	if directionPressed && player.Acceleration.Len() > 0.0001 {
 		player.TiltAngle += tiltSpeed * deltaTime
 		player.Acceleration = player.Acceleration.Normalize()
 		player.AccDirection = player.Acceleration
-		player.Velocity = player.Velocity.Add(player.Acceleration.Mul(deltaTime*acc))
-	} else{
+		player.Velocity = player.Velocity.Add(player.Acceleration.Mul(deltaTime * acc))
+	} else {
 		player.Acceleration = mgl32.Vec3{}
 		player.TiltAngle -= tiltSpeed * deltaTime
 	}
@@ -228,13 +228,12 @@ func handleInput(window *glfw.Window, deltaTime float32, player *player, lightPo
 		player.TiltAngle -= tiltSpeed * deltaTime
 		player.Velocity = player.Velocity.Mul((1 / speed) * maxSpeed)
 	}
-	if player.TiltAngle >= maxTiltAngle{
+	if player.TiltAngle >= maxTiltAngle {
 		player.TiltAngle = maxTiltAngle
-	}else if player.TiltAngle < 0{
+	} else if player.TiltAngle < 0 {
 		player.TiltAngle = 0
 	}
 	player.Position = player.Position.Add(player.Velocity.Mul(deltaTime))
-
 
 	//LIGHT MOTION
 	if window.GetKey(glfw.KeyUp) == glfw.Press {
