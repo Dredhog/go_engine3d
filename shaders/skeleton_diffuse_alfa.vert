@@ -3,7 +3,7 @@
 uniform mat4 mvp_mat;
 uniform mat4 model_mat;
 uniform mat4 model_rotation_mat;
-uniform mat4 bone_mat[8];
+uniform mat4 bone_mat[15];
 
 layout (location = 0) in vec3 position;
 layout (location = 1) in vec3 normal;
@@ -18,7 +18,7 @@ out vec3 Color;
 
 void main()
 {
-	vec2 Weights = weights / (weights.x + weights.y);
+	vec2 Weights = weights / ((weights.x + weights.y != 0) ? weights.x+weights.y : 1);
 	Position = (model_mat * (Weights.x*bone_mat[int(bones.x)] + Weights.y*bone_mat[int(bones.y)]) * vec4(position, 1.0)).xyz;
 	//Normal = normalize(((transpose(inverse(Weights.x*bone_mat[int(bones.x)]))) * vec4(normal, 0.0)).xyz);
 	Normal = normalize((model_rotation_mat * (transpose(inverse(Weights.x*bone_mat[int(bones.x)] + Weights.y*bone_mat[int(bones.y)]))) * vec4(normal, 0.0)).xyz);

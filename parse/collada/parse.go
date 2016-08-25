@@ -95,8 +95,8 @@ func parseSkin(skin *skin) ([]float32, []float32, error) {
 		switch influenceCounts[i] {
 		case 0:
 			indices[bonesPerVert*i] = 0
-			indices[bonesPerVert*i+1] = 0
 			weights[bonesPerVert*i] = 0
+			indices[bonesPerVert*i+1] = 0
 			weights[bonesPerVert*i+1] = 0
 		case 1:
 			indices[bonesPerVert*i] = float32(boneDataIndices[currentIndex])
