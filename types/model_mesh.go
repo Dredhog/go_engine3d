@@ -45,9 +45,9 @@ func (m *Mesh) setUpMesh() {
 	}
 	if m.AttrMask&USE_BONES != 0 {
 		gl.EnableVertexAttribArray(4)
-		gl.VertexAttribPointer(4, 2, gl.FLOAT, false, 0, gl.PtrOffset(4*m.Offsets[4]))
+		gl.VertexAttribPointer(4, 3, gl.FLOAT, false, 0, gl.PtrOffset(4*m.Offsets[4]))
 		gl.EnableVertexAttribArray(5)
-		gl.VertexAttribPointer(5, 2, gl.FLOAT, false, 0, gl.PtrOffset(4*m.Offsets[5]))
+		gl.VertexAttribPointer(5, 3, gl.FLOAT, false, 0, gl.PtrOffset(4*m.Offsets[5]))
 	}
 
 	//Rebind default array object

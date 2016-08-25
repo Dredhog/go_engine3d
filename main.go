@@ -61,7 +61,7 @@ func main() {
 		gl.DepthFunc(gl.LESS)
 		gl.ClearColor(0.2, 0.3, 0.5, 1.0)
 
-		model, err := collada.ParseModel("data/model/turner_skinned_full_rig.dae")
+		model, err := collada.ParseModel("data/model/turner_skinned_fixed_skin.dae")
 		if err != nil {
 			log.Fatalln(err)
 		}
@@ -128,7 +128,7 @@ func main() {
 			tiltAxis := player.Dir.Cross(NegYAxis)
 			modelRotationMatrix = toComMatrix.Mul4(mgl32.HomogRotate3D(player.TiltAngle, tiltAxis).Mul4(mgl32.HomogRotate3DY(player.Angle).Mul4(toComInvMatrix)))
 			modelMatrix = mgl32.Translate3D(player.Position[0], player.Position[1], player.Position[2]).Mul4(modelRotationMatrix)
-			ticks += 200 * deltaTime
+			ticks += 250 * t  * deltaTime
 			if t < 0 {
 				t = 0
 			} else if t > 1 {
@@ -179,12 +179,12 @@ type player struct {
 //Input function
 func handleInput(window *glfw.Window, deltaTime float32, player *player, lightPosition, forward, left, zAxis *mgl32.Vec3, t *float32) {
 	var lightSpeed float32 = 5 * deltaTime
-	//var maxTiltAngle float32 = 0.25
-	//var tiltSpeed float32 = 0.6
-	var maxSpeed float32 = 6
+	var maxTiltAngle float32 = 0.25
+	var tiltSpeed float32 = 0.6
+	var maxSpeed float32 = 8
 	var angularVelocity float32 = 15
-	var acc float32 = 20
-	var deacc float32 = 10
+	var acc float32 = 30
+	var deacc float32 = 20
 
 	//Pressing space to exit
 	if window.GetKey(glfw.KeySpace) == glfw.Press {
@@ -206,22 +206,33 @@ func handleInput(window *glfw.Window, deltaTime float32, player *player, lightPo
 		player.AccDirection = player.AccDirection.Add(left.Mul(-1))
 	}
 	if accDirLen := player.AccDirection.Len(); accDirLen != 0 {
-		player.Velocity = player.Velocity.Add(player.AccDirection.Normalize().Mul(deltaTime * acc))
-		player.Dir = player.Dir.Add(player.AccDirection.Mul((1 / accDirLen) * deltaTime * acc * 2))
-	} else if player.Velocity.Len() >= deltaTime*deacc {
-		player.Velocity = player.Velocity.Sub(player.Velocity.Normalize().Mul(deltaTime * deacc))
+		player.AccDirection = player.AccDirection.Mul(1/accDirLen)
+		player.Velocity = player.Velocity.Add(player.AccDirection.Mul(deltaTime * acc))
+		player.Dir = player.Dir.Add(player.AccDirection.Mul(deltaTime * acc * 2))
+	} else if speed := player.Velocity.Len(); speed >= deltaTime*deacc {
+		player.Velocity = player.Velocity.Sub(player.Velocity.Mul((1/speed) * deltaTime * deacc))
+		player.TiltAngle -= tiltSpeed * deltaTime
 	} else {
 		player.Velocity = mgl32.Vec3{}
+		player.TiltAngle -= tiltSpeed * deltaTime
 	}
 	//Limit the player's velocity
 	if speed := player.Velocity.Len(); speed > maxSpeed {
 		player.Velocity = player.Velocity.Mul((1 / speed) * maxSpeed)
 	}
-	if player.Velocity.Len() != 0 {
-		player.Dir = player.Velocity.Normalize()
+	if speed := player.Velocity.Len(); speed != 0 {
+		player.Dir = player.Velocity.Mul(1/speed)
+		player.TiltAngle += player.Dir.Dot(player.AccDirection) * tiltSpeed * deltaTime
 	}
 	//Update the player's position
 	player.Position = player.Position.Add(player.Velocity.Mul(deltaTime))
+
+	//Limit the player's tilt angle
+	if player.TiltAngle > maxTiltAngle{
+		player.TiltAngle = maxTiltAngle
+	} else if player.TiltAngle < 0{
+		player.TiltAngle = 0
+	}
 
 	//Determine the player's orientation
 	dtr := float32(math.Pi / 180)
@@ -280,6 +291,7 @@ func handleInput(window *glfw.Window, deltaTime float32, player *player, lightPo
 		player.Dir[2] = 1
 	}
 	//ANIMATION BLENDING
+	*t = player.Velocity.Len()/maxSpeed
 	if window.GetKey(glfw.Key0) == glfw.Press {
 		*t -= 2 * deltaTime
 	}
@@ -288,15 +300,15 @@ func handleInput(window *glfw.Window, deltaTime float32, player *player, lightPo
 	}
 }
 
-var keyframe00 = anim.Keyframe{Ticks: 0, Transforms: []anim.Transform{
+var keyframe10 = anim.Keyframe{Ticks: 0, Transforms: []anim.Transform{
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, -10}},
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, -30}},
-	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{40, 0, 0}},
+	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{90, 0, 0}},
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 10}},
-	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 30}},
-	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{40, 0, 0}},
+	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{-20, 0, 30}},
+	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{20, 0, 0}},
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
@@ -304,31 +316,31 @@ var keyframe00 = anim.Keyframe{Ticks: 0, Transforms: []anim.Transform{
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{20, 0, 0}},
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{-90, 0, 0}},
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}}}}
-var keyframe01 = anim.Keyframe{Ticks: 30, Transforms: []anim.Transform{
+var keyframe11 = anim.Keyframe{Ticks: 30, Transforms: []anim.Transform{
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 20, 0}},
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, -10}},
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{45, 0, -30}},
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{130, 0, 0}},
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, -20, 0}},
-	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{-80, -20, 30}},
+	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{-50, -20, 30}},
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{60, 0, 0}},
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, -30, 0}},
-	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{-50, 0, 0}},
+	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{-40, 0, 0}},
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{-20, 0, 0}},
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{-20, 0, 0}},
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{80, 0, 0}},
-	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{-30, 0, 0}},
+	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{-40, 0, 0}},
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{-50, 0, 0}}}}
-var keyframe02 = anim.Keyframe{Ticks: 60, Transforms: []anim.Transform{
+var keyframe12 = anim.Keyframe{Ticks: 60, Transforms: []anim.Transform{
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, -10}},
-	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, -30}},
-	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{40, 0, 0}},
+	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{-20, 0, -30}},
+	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{20, 0, 0}},
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 10}},
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 30}},
-	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{40, 0, 0}},
+	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{90, 0, 0}},
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{20, 0, 0}},
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{-90, 0, 0}},
@@ -336,31 +348,31 @@ var keyframe02 = anim.Keyframe{Ticks: 60, Transforms: []anim.Transform{
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{-10, 0, 0}}}}
-var keyframe03 = anim.Keyframe{Ticks: 90, Transforms: []anim.Transform{
+var keyframe13 = anim.Keyframe{Ticks: 90, Transforms: []anim.Transform{
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, -20, 0}},
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 20, 0}},
-	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{-80, 20, -30}},
+	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{-50, 20, -30}},
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{60, 0, 0}},
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 10}},
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{45, 0, 30}},
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{130, 0, 0}},
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 30, 0}},
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{80, 0, 0}},
-	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{-30, 0, 0}},
+	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{-40, 0, 0}},
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{-50, 0, 0}},
-	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{-50, 0, 0}},
+	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{-40, 0, 0}},
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{-20, 0, 0}},
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{-20, 0, 0}}}}
-var keyframe04 = anim.Keyframe{Ticks: 120, Transforms: []anim.Transform{
+var keyframe14 = anim.Keyframe{Ticks: 120, Transforms: []anim.Transform{
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, -10}},
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, -30}},
-	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{40, 0, 0}},
+	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{90, 0, 0}},
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 10}},
-	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 30}},
-	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{40, 0, 0}},
+	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{-20, 0, 30}},
+	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{20, 0, 0}},
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
@@ -368,7 +380,7 @@ var keyframe04 = anim.Keyframe{Ticks: 120, Transforms: []anim.Transform{
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{20, 0, 0}},
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{-90, 0, 0}},
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}}}}
-var keyframe10 = anim.Keyframe{Ticks: 0, Transforms: []anim.Transform{
+var keyframe00 = anim.Keyframe{Ticks: 0, Transforms: []anim.Transform{
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, -10}},
@@ -384,7 +396,7 @@ var keyframe10 = anim.Keyframe{Ticks: 0, Transforms: []anim.Transform{
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}}}}
-var keyframe11 = anim.Keyframe{Ticks: 30, Transforms: []anim.Transform{
+var keyframe01 = anim.Keyframe{Ticks: 30, Transforms: []anim.Transform{
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, -10}},
@@ -393,14 +405,14 @@ var keyframe11 = anim.Keyframe{Ticks: 30, Transforms: []anim.Transform{
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 10}},
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 30}},
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
-	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
+	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, -5, 0}},
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{-20, 0, 0}},
-	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
-	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{10, 0, 0}},
-	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{20, 0, 0}},
-	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{10, 0, 0}},
-	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{-20, 0, 0}}}}
-var keyframe12 = anim.Keyframe{Ticks: 60, Transforms: []anim.Transform{
+	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{15, 0, 0}},
+	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{-10, 0, 0}},
+	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{15, 0, 0}},
+	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{15, 0, 0}},
+	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{-30, 0, 0}}}}
+var keyframe02 = anim.Keyframe{Ticks: 60, Transforms: []anim.Transform{
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, -10}},
@@ -416,7 +428,23 @@ var keyframe12 = anim.Keyframe{Ticks: 60, Transforms: []anim.Transform{
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}}}}
-var keyframe13 = anim.Keyframe{Ticks: 90, Transforms: []anim.Transform{
+var keyframe03 = anim.Keyframe{Ticks: 90, Transforms: []anim.Transform{
+	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
+	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
+	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, -10}},
+	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, -30}},
+	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
+	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 10}},
+	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 30}},
+	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
+	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 5, 0}},
+	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{15, 0, 0}},
+	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{15, 0, 0}},
+	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{-30, 0, 0}},
+	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{-20, 0, 0}},
+	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{15, 0, 0}},
+	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{-10, 0, 0}}}}
+var keyframe04 = anim.Keyframe{Ticks: 120, Transforms: []anim.Transform{
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, -10}},
@@ -426,25 +454,9 @@ var keyframe13 = anim.Keyframe{Ticks: 90, Transforms: []anim.Transform{
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 30}},
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
-	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{20, 0, 0}},
-	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{10, 0, 0}},
-	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{-20, 0, 0}},
-	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{-20, 0, 0}},
-	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
-	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{10, 0, 0}}}}
-var keyframe14 = anim.Keyframe{Ticks: 120, Transforms: []anim.Transform{
-	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
-	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
-	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, -10}},
-	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, -30}},
-	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
-	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 10}},
-	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 30}},
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
-	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
-	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{10, 0, 0}},
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}}}}

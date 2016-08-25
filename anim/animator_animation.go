@@ -14,6 +14,8 @@ func (a *Animation) SampleLooping(ticks float32, result *Keyframe) error {
 			if err := LerpKeyframe(&a.Keyframes[i], &a.Keyframes[i+1], (ticks-a.Keyframes[i].Ticks)/(a.Keyframes[i+1].Ticks-a.Keyframes[i].Ticks), result); err != nil{
 				return err
 			}
+			//*result = Keyframe{}
+			//*result = a.Keyframes[i]
 			return nil
 		}
 	}
