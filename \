@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/go-gl/gl/v3.3-core/gl"
-	"github.com/go-gl/glfw/v3.2/glfw"
+	"github.com/go-gl/glfw/v3.1/glfw"
 	"github.com/go-gl/mathgl/mgl32"
 	"log"
 	"math"
@@ -24,7 +24,7 @@ func init() {
 const (
 	screenWidth  = 1920
 	screenHeight = 1080
-	fps          = 122
+	fps          = 20
 )
 
 func main() {
@@ -96,6 +96,7 @@ func main() {
 		lightPosition := mgl32.Vec3{0, 1, 2}
 		forward := mgl32.Vec3{0, 0, -1}
 		left := mgl32.Vec3{-1, 0, 0}
+		//NegYAxis := mgl32.Vec3{0, -1, 0}
 		zAxis := mgl32.Vec3{0, 0, 1}
 		yAxis := mgl32.Vec3{0, 1, 0}
 
@@ -115,7 +116,7 @@ func main() {
 		for !window.ShouldClose() {
 			//Get input
 			glfw.PollEvents()
-			handleInput(window, deltaTime, &player, &lightPosition, &forward, &left, &yAxis, &zAxis, &ticks, &t)
+			handleInput(window, deltaTime/3, &player, &lightPosition, &forward, &left, &yAxis, &zAxis, &ticks, &t)
 
 			deltaTime = float32(glfw.GetTime() - frameStart)
 			if deltaTime < frameTime {
@@ -154,6 +155,7 @@ func main() {
 				//fmt.Printf("Tilt %v", rtd*player.TiltAngle)
 				frames = 0
 			}
+				fmt.Printf("speed: %v\t; Acceleration: %v;", player.Velocity.Len(), player.AccDirection.Len())
 
 			//Perform rendering
 			gl.UseProgram(shaderProgram)
@@ -201,33 +203,28 @@ func handleInput(window *glfw.Window, deltaTime float32, player *player, lightPo
 		window.SetShouldClose(true)
 	}
 
-	keysPressed := 0
 	//PLAYER MOTION
 	player.AccDirection = mgl32.Vec3{}
 	if window.GetKey(glfw.KeyW) == glfw.Press {
 		player.AccDirection = player.AccDirection.Add(*forward)
-		keysPressed++
 	}
 	if window.GetKey(glfw.KeyS) == glfw.Press {
 		player.AccDirection = player.AccDirection.Add(forward.Mul(-1))
-		keysPressed++
 	}
 	if window.GetKey(glfw.KeyA) == glfw.Press {
 		player.AccDirection = player.AccDirection.Add(*left)
-		keysPressed++
 	}
 	if window.GetKey(glfw.KeyD) == glfw.Press {
 		player.AccDirection = player.AccDirection.Add(left.Mul(-1))
-		keysPressed++
 	}
-	_ = keysPressed
-	//gl.ClearColor(0.2, 0.3 + float32(keysPressed)*0.2, 0.5, 1.0)
 	if accDirLen := player.AccDirection.Len(); accDirLen != 0 {
 		player.AccDirection = player.AccDirection.Mul(1/accDirLen)
 		if temp := player.Up.Normalize().Add(player.AccDirection.Mul(3*deltaTime)); math.Acos(float64(temp.Normalize().Dot(*yAxis))) < float64(maxTiltAngle){
 			player.Up = temp.Mul(1/player.Up[1])
 		}
-		player.Velocity = player.Velocity.Add(player.AccDirection.Mul(acc * deltaTime))
+		if temp := player.Velocity.Add(player.AccDirection.Mul(acc * deltaTime)); temp.Len() <= maxSpeed{
+			player.Velocity = temp
+		}
 		player.Dir = player.Dir.Add(player.AccDirection.Mul(deltaTime * acc * 2))
 	} else if speed := player.Velocity.Len(); speed >= deltaTime*deacc {
 		player.Velocity = player.Velocity.Sub(player.Velocity.Mul((1/speed) * deltaTime * deacc))
@@ -238,9 +235,6 @@ func handleInput(window *glfw.Window, deltaTime float32, player *player, lightPo
 	//Limit the player's velocity
 	if speed := player.Velocity.Len(); speed != 0 {
 		player.Dir = player.Velocity.Mul(1/speed)
-		if speed > maxSpeed{
-			player.Velocity = player.Dir.Mul(maxSpeed)
-		}
 	}
 	//ANIMATION BLENDING
 	*t = player.Velocity.Len()/maxSpeed
@@ -274,19 +268,15 @@ func handleInput(window *glfw.Window, deltaTime float32, player *player, lightPo
 		case delta <= 180*dtr:
 			if player.Angle+angularVelocity*deltaTime < player.DestAngle {
 				player.Angle += angularVelocity * deltaTime
-			}else {
-				player.Angle = player.DestAngle
 			}
 		case delta < 360*dtr:
 			player.Angle -= angularVelocity * deltaTime
 		}
 	} else {
 		switch {
-		case -180*dtr <= delta:
+		case -180*dtr < delta:
 			if player.Angle-angularVelocity*deltaTime > player.DestAngle {
 				player.Angle -= angularVelocity * deltaTime
-			}else {
-				player.Angle = player.DestAngle
 			}
 		case -360*dtr < delta:
 			player.Angle += angularVelocity * deltaTime
