@@ -23,6 +23,7 @@ void main()
 	//Phong light diffuse and alfa effect
 	float light_dot_normal = dot(normalize(light_position - Position), Normal);
 	float diffuse_alfa = max(light_dot_normal, 0.2);
+	float final_light_intensity = max(light_squared_norm * diffuse_alfa, 0.2);
 
-	outColor = light_squared_norm * diffuse_alfa * texture(sampler_diffuse, TexCoord);  
+	outColor = final_light_intensity * texture(sampler_diffuse, TexCoord);  
 }
