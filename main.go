@@ -182,6 +182,7 @@ type player struct {
 	TiltAngle    float32
 	DestAngle    float32
 	Angle        float32
+	InAir	     bool
 }
 
 //Input function
@@ -191,56 +192,64 @@ func handleInput(window *glfw.Window, deltaTime float32, player *player, lightPo
 	//var tiltSpeed float32 = 0.8
 	var tickSpeed float32 = 200
 	var maxSpeed float32 = 10
+	var jumpVerticalSpeed float32 = 5
 	var angularVelocity float32 = 15
 	var acc float32 = 30
 	var deacc float32 = 15
 
-	//Pressing space to exit
-	if window.GetKey(glfw.KeyEscape) == glfw.Press ||
-	   window.GetKey(glfw.KeySpace) == glfw.Press {
+	//Pressing Esc to exit
+	if window.GetKey(glfw.KeyEscape) == glfw.Press{
 		window.SetShouldClose(true)
 	}
+	if !player.InAir && window.GetKey(glfw.KeySpace) == glfw.Press{
+		player.InAir = true
+		player.Velocity = player.Velocity.Add(yAxis.Mul(jumpVerticalSpeed))
+	}
 
-	keysPressed := 0
 	//PLAYER MOTION
 	player.AccDirection = mgl32.Vec3{}
 	if window.GetKey(glfw.KeyW) == glfw.Press {
 		player.AccDirection = player.AccDirection.Add(*forward)
-		keysPressed++
 	}
 	if window.GetKey(glfw.KeyS) == glfw.Press {
 		player.AccDirection = player.AccDirection.Add(forward.Mul(-1))
-		keysPressed++
 	}
 	if window.GetKey(glfw.KeyA) == glfw.Press {
 		player.AccDirection = player.AccDirection.Add(*left)
-		keysPressed++
 	}
 	if window.GetKey(glfw.KeyD) == glfw.Press {
 		player.AccDirection = player.AccDirection.Add(left.Mul(-1))
-		keysPressed++
 	}
-	_ = keysPressed
-	//gl.ClearColor(0.2, 0.3 + float32(keysPressed)*0.2, 0.5, 1.0)
-	if accDirLen := player.AccDirection.Len(); accDirLen != 0 {
-		player.AccDirection = player.AccDirection.Mul(1/accDirLen)
-		if temp := player.Up.Normalize().Add(player.AccDirection.Mul(3*deltaTime)); math.Acos(float64(temp.Normalize().Dot(*yAxis))) < float64(maxTiltAngle){
-			player.Up = temp.Mul(1/player.Up[1])
+	if !player.InAir{
+		if accDirLen := player.AccDirection.Len(); accDirLen != 0 {
+			player.AccDirection = player.AccDirection.Mul(1/accDirLen)
+			if temp := player.Up.Normalize().Add(player.AccDirection.Mul(3*deltaTime)); math.Acos(float64(temp.Normalize().Dot(*yAxis))) < float64(maxTiltAngle){
+				player.Up = temp.Mul(1/player.Up[1])
+			}
+			player.Velocity = player.Velocity.Add(player.AccDirection.Mul(acc * deltaTime))
+			player.Dir = player.Dir.Add(player.AccDirection.Mul(deltaTime * acc * 2))
+		} else if speed := player.Velocity.Len(); speed >= deltaTime*deacc {
+			player.Velocity = player.Velocity.Sub(player.Velocity.Mul((1/speed) * deltaTime * deacc))
+		} else {
+			player.Velocity = mgl32.Vec3{}
+			tickSpeed = 0
 		}
-		player.Velocity = player.Velocity.Add(player.AccDirection.Mul(acc * deltaTime))
-		player.Dir = player.Dir.Add(player.AccDirection.Mul(deltaTime * acc * 2))
-	} else if speed := player.Velocity.Len(); speed >= deltaTime*deacc {
-		player.Velocity = player.Velocity.Sub(player.Velocity.Mul((1/speed) * deltaTime * deacc))
+		//Limit the player's velocity
+		if speed := player.Velocity.Len(); speed != 0 {
+			player.Dir = player.Velocity.Mul(1/speed)
+			if speed > maxSpeed{
+				player.Velocity = player.Dir.Mul(maxSpeed)
+			}
+		}
 	} else {
-		player.Velocity = mgl32.Vec3{}
-		tickSpeed = 0
+		player.Velocity = player.Velocity.Add(yAxis.Mul(-9.81 * deltaTime))
+		tickSpeed = 50
 	}
-	//Limit the player's velocity
-	if speed := player.Velocity.Len(); speed != 0 {
-		player.Dir = player.Velocity.Mul(1/speed)
-		if speed > maxSpeed{
-			player.Velocity = player.Dir.Mul(maxSpeed)
-		}
+	//basic falling collision
+	if player.Position[1] < 0 {
+		player.InAir = false
+		player.Position[1] = 0
+		player.Velocity[1] = 0
 	}
 	//ANIMATION BLENDING
 	*t = player.Velocity.Len()/maxSpeed
