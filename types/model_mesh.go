@@ -1,6 +1,11 @@
 package types
 
-import "github.com/go-gl/gl/v3.3-core/gl"
+import (
+	"fmt"
+	"strconv"
+
+	"github.com/go-gl/gl/v3.3-core/gl"
+)
 
 func (m *Mesh) Init(floats []float32, indices []uint32, attrMask uint32, offsets [6]int, textures []Texture) {
 	m.Floats = floats
@@ -34,12 +39,10 @@ func (m *Mesh) setUpMesh() {
 		gl.VertexAttribPointer(1, 3, gl.FLOAT, false, 0, gl.PtrOffset(4*m.Offsets[1]))
 	}
 	if m.AttrMask&USE_TEXCOORDS != 0 {
-		//Vertex texture coords
 		gl.EnableVertexAttribArray(2)
 		gl.VertexAttribPointer(2, 2, gl.FLOAT, false, 0, gl.PtrOffset(4*m.Offsets[2]))
 	}
 	if m.AttrMask&USE_COLORS != 0 {
-		//Vertex texture coords
 		gl.EnableVertexAttribArray(3)
 		gl.VertexAttribPointer(3, 3, gl.FLOAT, false, 0, gl.PtrOffset(4*m.Offsets[3]))
 	}
@@ -54,10 +57,25 @@ func (m *Mesh) setUpMesh() {
 	gl.BindVertexArray(0)
 }
 
-func (m *Mesh) Draw() {
-	if len(m.Textures) > 0 {
-		gl.BindTexture(gl.TEXTURE_2D, m.Textures[0].Id)
+func (m *Mesh) Draw(shader uint32) {
+	diffuseCount := 0
+	specularCount := 0
+	for i := 0; i < len(m.Textures); i++ {
+		switch m.Textures[i].Type {
+		case "specular":
+			gl.Uniform1i(gl.GetUniformLocation(shader, gl.Str("texture_specular"+strconv.Itoa(specularCount)+"\x00")), int32(i))
+			specularCount++
+		case "diffuse":
+			gl.Uniform1i(gl.GetUniformLocation(shader, gl.Str("texture_diffuse"+strconv.Itoa(diffuseCount)+"\x00")), int32(i))
+			diffuseCount++
+		default:
+			panic(fmt.Errorf("mesh: unsupported texture type: %v", m.Textures[i].Type))
+		}
+		gl.ActiveTexture(gl.TEXTURE0 + uint32(i))
+		gl.BindTexture(gl.TEXTURE_2D, m.Textures[i].Id)
 	}
+	gl.ActiveTexture(gl.TEXTURE0)
+
 	gl.BindVertexArray(m.VAO)
 	gl.DrawElements(gl.TRIANGLES, int32(len(m.Indices)), gl.UNSIGNED_INT, gl.PtrOffset(0))
 	gl.BindVertexArray(0)

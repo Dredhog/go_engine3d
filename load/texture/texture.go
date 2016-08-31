@@ -12,14 +12,14 @@ import (
 )
 
 func NewTexture(file string) (uint32, error) {
-	relativePath, err := os.Getwd()
+	workingDirectory, err := os.Getwd()
 	if err != nil {
-		return 0, fmt.Errorf("texture: relative path error: %q", err)
+		return 0, fmt.Errorf("texture: error getting working directory path: %q", err)
 	}
 
-	imgFile, err := os.Open(relativePath + "/data/texture/" + file)
+	imgFile, err := os.Open(workingDirectory + "/data/texture/" + file)
 	if err != nil {
-		return 0, fmt.Errorf("texture: %q not found on disk: %v", relativePath+"/data/textures/"+file, err)
+		return 0, fmt.Errorf("texture: %q not found on disk: %v", workingDirectory+"/data/textures/"+file, err)
 	}
 	defer imgFile.Close()
 

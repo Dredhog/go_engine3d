@@ -1,7 +1,8 @@
 #version 330
 
 uniform vec3 light_position;
-uniform sampler2D sampler_diffuse;
+uniform sampler2D texture_diffuse0;
+uniform sampler2D texture_specular0;
 
 in vec3 Position;
 in vec3 Normal;
@@ -25,5 +26,9 @@ void main()
 	float diffuse_alfa = max(light_dot_normal, 0.2);
 	float final_light_intensity = max(light_squared_norm * diffuse_alfa, 0.2);
 
-	outColor = final_light_intensity * texture(sampler_diffuse, TexCoord);  
+	if (texture(texture_diffuse0, TexCoord) == texture(texture_specular0, TexCoord)){
+		outColor = white;
+	} else {
+		outColor = final_light_intensity * texture(texture_diffuse0, TexCoord) * texture(texture_specular0, TexCoord).r;
+	}
 }

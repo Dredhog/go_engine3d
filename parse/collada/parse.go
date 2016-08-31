@@ -70,69 +70,6 @@ func splitAndRemoveEmpty(str string) []string {
 	return result
 }
 
-func parseSkin(skin *skin) ([]float32, []float32, error) {
-	var boneDataIndices, influenceCounts []int
-	var boneWeights []float32
-	indexStride, bonesPerVert := 2, 3
-
-	boneWeights, err := stringToFloatArray(skin.Sources[2].FloatArray.Content)
-	if err != nil {
-		return nil, nil, fmt.Errorf("collada: skin error getting bone weights %v", err)
-	}
-	influenceCounts, err = stringToIntArray(skin.VertexWeights.VCount)
-	if err != nil {
-		return nil, nil, fmt.Errorf("collada: skin: %v", err)
-	}
-	boneDataIndices, err = stringToIntArray(skin.VertexWeights.V)
-	if err != nil {
-		return nil, nil, fmt.Errorf("collada: skin: %v", err)
-	}
-
-	indices := make([]float32, bonesPerVert*len(influenceCounts))
-	weights := make([]float32, bonesPerVert*len(influenceCounts))
-	currentIndex := 0
-	for i := 0; i < len(influenceCounts); i++ {
-		switch influenceCounts[i] {
-		case 0:
-			indices[bonesPerVert*i] = 0
-			weights[bonesPerVert*i] = 0
-			indices[bonesPerVert*i+1] = 0
-			weights[bonesPerVert*i+1] = 0
-			indices[bonesPerVert*i+2] = 0
-			weights[bonesPerVert*i+2] = 0
-		case 1:
-			indices[bonesPerVert*i] = float32(boneDataIndices[currentIndex])
-			weights[bonesPerVert*i] = boneWeights[boneDataIndices[currentIndex+1]]
-			indices[bonesPerVert*i+1] = 0
-			weights[bonesPerVert*i+1] = 0
-			indices[bonesPerVert*i+2] = 0
-			weights[bonesPerVert*i+2] = 0
-		case 2:
-			indices[bonesPerVert*i] = float32(boneDataIndices[currentIndex])
-			weights[bonesPerVert*i] = boneWeights[boneDataIndices[currentIndex+1]]
-			indices[bonesPerVert*i+1] = float32(boneDataIndices[currentIndex+2])
-			weights[bonesPerVert*i+1] = boneWeights[boneDataIndices[currentIndex+3]]
-			indices[bonesPerVert*i+2] = 0
-			weights[bonesPerVert*i+2] = 0
-		case 3:
-			indices[bonesPerVert*i] = float32(boneDataIndices[currentIndex])
-			weights[bonesPerVert*i] = boneWeights[boneDataIndices[currentIndex+1]]
-			indices[bonesPerVert*i+1] = float32(boneDataIndices[currentIndex+2])
-			weights[bonesPerVert*i+1] = boneWeights[boneDataIndices[currentIndex+3]]
-			indices[bonesPerVert*i+2] = float32(boneDataIndices[currentIndex+4])
-			weights[bonesPerVert*i+2] = boneWeights[boneDataIndices[currentIndex+5]]
-		default:
-			indices[bonesPerVert*i] = float32(boneDataIndices[currentIndex])
-			weights[bonesPerVert*i] = boneWeights[boneDataIndices[currentIndex+1]]
-			indices[bonesPerVert*i+1] = float32(boneDataIndices[currentIndex+2])
-			weights[bonesPerVert*i+1] = boneWeights[boneDataIndices[currentIndex+3]]
-			indices[bonesPerVert*i+2] = float32(boneDataIndices[currentIndex+4])
-			weights[bonesPerVert*i+2] = boneWeights[boneDataIndices[currentIndex+5]]
-		}
-		currentIndex += influenceCounts[i] * indexStride
-	}
-	return indices, weights, nil
-}
 
 func ParseModel(fileName string) (*types.Model, error) {
 	collada, err := Parse(fileName)
@@ -275,6 +212,70 @@ func extractSkeleton(skin *skin, libraryVisualScenes *libraryVisualScenes) (*ani
 		}
 	}
 	return nil, fmt.Errorf("collada: no root node found in skeleton data")
+}
+
+func parseSkin(skin *skin) ([]float32, []float32, error) {
+	var boneDataIndices, influenceCounts []int
+	var boneWeights []float32
+	indexStride, bonesPerVert := 2, 3
+
+	boneWeights, err := stringToFloatArray(skin.Sources[2].FloatArray.Content)
+	if err != nil {
+		return nil, nil, fmt.Errorf("collada: skin error getting bone weights %v", err)
+	}
+	influenceCounts, err = stringToIntArray(skin.VertexWeights.VCount)
+	if err != nil {
+		return nil, nil, fmt.Errorf("collada: skin: %v", err)
+	}
+	boneDataIndices, err = stringToIntArray(skin.VertexWeights.V)
+	if err != nil {
+		return nil, nil, fmt.Errorf("collada: skin: %v", err)
+	}
+
+	indices := make([]float32, bonesPerVert*len(influenceCounts))
+	weights := make([]float32, bonesPerVert*len(influenceCounts))
+	currentIndex := 0
+	for i := 0; i < len(influenceCounts); i++ {
+		switch influenceCounts[i] {
+		case 0:
+			indices[bonesPerVert*i] = 0
+			weights[bonesPerVert*i] = 0
+			indices[bonesPerVert*i+1] = 0
+			weights[bonesPerVert*i+1] = 0
+			indices[bonesPerVert*i+2] = 0
+			weights[bonesPerVert*i+2] = 0
+		case 1:
+			indices[bonesPerVert*i] = float32(boneDataIndices[currentIndex])
+			weights[bonesPerVert*i] = boneWeights[boneDataIndices[currentIndex+1]]
+			indices[bonesPerVert*i+1] = 0
+			weights[bonesPerVert*i+1] = 0
+			indices[bonesPerVert*i+2] = 0
+			weights[bonesPerVert*i+2] = 0
+		case 2:
+			indices[bonesPerVert*i] = float32(boneDataIndices[currentIndex])
+			weights[bonesPerVert*i] = boneWeights[boneDataIndices[currentIndex+1]]
+			indices[bonesPerVert*i+1] = float32(boneDataIndices[currentIndex+2])
+			weights[bonesPerVert*i+1] = boneWeights[boneDataIndices[currentIndex+3]]
+			indices[bonesPerVert*i+2] = 0
+			weights[bonesPerVert*i+2] = 0
+		case 3:
+			indices[bonesPerVert*i] = float32(boneDataIndices[currentIndex])
+			weights[bonesPerVert*i] = boneWeights[boneDataIndices[currentIndex+1]]
+			indices[bonesPerVert*i+1] = float32(boneDataIndices[currentIndex+2])
+			weights[bonesPerVert*i+1] = boneWeights[boneDataIndices[currentIndex+3]]
+			indices[bonesPerVert*i+2] = float32(boneDataIndices[currentIndex+4])
+			weights[bonesPerVert*i+2] = boneWeights[boneDataIndices[currentIndex+5]]
+		default:
+			indices[bonesPerVert*i] = float32(boneDataIndices[currentIndex])
+			weights[bonesPerVert*i] = boneWeights[boneDataIndices[currentIndex+1]]
+			indices[bonesPerVert*i+1] = float32(boneDataIndices[currentIndex+2])
+			weights[bonesPerVert*i+1] = boneWeights[boneDataIndices[currentIndex+3]]
+			indices[bonesPerVert*i+2] = float32(boneDataIndices[currentIndex+4])
+			weights[bonesPerVert*i+2] = boneWeights[boneDataIndices[currentIndex+5]]
+		}
+		currentIndex += influenceCounts[i] * indexStride
+	}
+	return indices, weights, nil
 }
 
 func registerBoneAndItsChildren(bones []anim.Bone, currentNode *node, parentIndex int, bindShape mgl32.Mat4, sidToIndex map[string]int, sidToInvBindMat map[string][]float32) {

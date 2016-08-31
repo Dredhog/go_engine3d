@@ -10,13 +10,13 @@ import (
 )
 
 func NewProgram(fileName string) (uint32, error) {
-	relativePath, err := os.Getwd()
+	workingDirectory, err := os.Getwd()
 	if err != nil {
 		return 0, fmt.Errorf("shader: realative path read error: %v", err)
 	}
 
 	//Read vertex shader
-	vertexSourceBytes, err := ioutil.ReadFile(relativePath + "/shaders/" + fileName + ".vert")
+	vertexSourceBytes, err := ioutil.ReadFile(workingDirectory + "/shaders/" + fileName + ".vert")
 	if err != nil {
 		return 0, fmt.Errorf("shader: vertex file read error: %v", err)
 	}
@@ -26,7 +26,7 @@ func NewProgram(fileName string) (uint32, error) {
 	}
 
 	//Read fragment shader
-	fragmentSourceBytes, err := ioutil.ReadFile(relativePath + "/shaders/" + fileName + ".frag")
+	fragmentSourceBytes, err := ioutil.ReadFile(workingDirectory + "/shaders/" + fileName + ".frag")
 	if err != nil {
 		return 0, fmt.Errorf("shader: fragment file read error: %v", err)
 	}

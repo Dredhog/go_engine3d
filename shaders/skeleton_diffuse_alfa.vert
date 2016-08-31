@@ -1,6 +1,6 @@
 #version 330
 
-uniform mat4 mvp_mat;
+uniform mat4 vp_mat;
 uniform mat4 model_mat;
 uniform mat4 model_rotation_mat;
 uniform mat4 bone_mat[15];
@@ -24,5 +24,5 @@ void main()
 	Normal = normalize((model_rotation_mat * (transpose(inverse(Weights.x*bone_mat[int(bones.x)] + Weights.y*bone_mat[int(bones.y)]))) * vec4(normal, 0.0)).xyz);
 	TexCoord = texCoord;
 	Color = color;
-	gl_Position = mvp_mat * model_mat * (Weights.x*bone_mat[int(bones.x)] + Weights.y*bone_mat[int(bones.y)] + Weights.z*bone_mat[int(bones.z)]) * vec4(position, 1);
+	gl_Position = vp_mat * model_mat * (Weights.x*bone_mat[int(bones.x)] + Weights.y*bone_mat[int(bones.y)] + Weights.z*bone_mat[int(bones.z)]) * vec4(position, 1);
 }
