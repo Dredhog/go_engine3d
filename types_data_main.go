@@ -9,6 +9,12 @@ import (
 	"training/engine/anim"
 )
 
+type gizmo struct{
+	xAxis mgl32.Vec3
+	yAxis mgl32.Vec3
+	zAxis mgl32.Vec3
+}
+
 type camera struct {
 	Position         mgl32.Vec3
 	Direction        mgl32.Vec3
@@ -25,8 +31,6 @@ type frameTimer struct {
 	deltaTime        float32
 	frames           int
 	seconds          int
-	animTicks        float32
-	tikcsPerSecond   float32
 	isSecondMark     bool
 	currentFps	 int
 	desiredFrameTime float32
@@ -45,11 +49,11 @@ type player struct {
 	InAir        bool
 }
 
-func newCamera(position, direction mgl32.Vec3) camera {
+func newCamera(position, direction mgl32.Vec3, world *gizmo) camera {
 	cam := camera{Position: position, Direction: direction}
 	globalUp := mgl32.Vec3{0, 1, 0}
-	cam.Left = yAxis.Cross(cam.Direction).Normalize()
-	cam.Forward = cam.Left.Cross(yAxis).Normalize()
+	cam.Left = world.yAxis.Cross(cam.Direction).Normalize()
+	cam.Forward = cam.Left.Cross(world.yAxis).Normalize()
 	cam.ViewMatrix = mgl32.LookAtV(cam.Position, cam.Position.Add(cam.Direction), globalUp)
 	cam.ProjectionMatrix = mgl32.Perspective(math.Pi/4, 1.6, 0.1, 100.0)
 	cam.VPMatrix = cam.ProjectionMatrix.Mul4(cam.ViewMatrix)
@@ -77,7 +81,7 @@ func (f *frameTimer) Update() {
 }
 
 
-var keyframe00 = anim.Keyframe{Ticks: 0, Transforms: []anim.Transform{
+var keyframe00 = anim.Keyframe{SampleTime: 0, Transforms: []anim.Transform{
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, -10}},
@@ -93,7 +97,7 @@ var keyframe00 = anim.Keyframe{Ticks: 0, Transforms: []anim.Transform{
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}}}}
-var keyframe01 = anim.Keyframe{Ticks: 30, Transforms: []anim.Transform{
+var keyframe01 = anim.Keyframe{SampleTime: 0.15, Transforms: []anim.Transform{
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{0, 0.05, 0}, [3]float32{0, 0, 0}},
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, -10}},
@@ -109,7 +113,7 @@ var keyframe01 = anim.Keyframe{Ticks: 30, Transforms: []anim.Transform{
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{15, 0, 0}},
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{15, 0, 0}},
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{-30, 0, 0}}}}
-var keyframe02 = anim.Keyframe{Ticks: 60, Transforms: []anim.Transform{
+var keyframe02 = anim.Keyframe{SampleTime: 0.3, Transforms: []anim.Transform{
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, -10}},
@@ -125,7 +129,7 @@ var keyframe02 = anim.Keyframe{Ticks: 60, Transforms: []anim.Transform{
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}}}}
-var keyframe03 = anim.Keyframe{Ticks: 90, Transforms: []anim.Transform{
+var keyframe03 = anim.Keyframe{SampleTime: 0.45, Transforms: []anim.Transform{
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{0, 0.05, 0}, [3]float32{0, 0, 0}},
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, -10}},
@@ -141,7 +145,7 @@ var keyframe03 = anim.Keyframe{Ticks: 90, Transforms: []anim.Transform{
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{-20, 0, 0}},
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{15, 0, 0}},
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{-10, 0, 0}}}}
-var keyframe04 = anim.Keyframe{Ticks: 120, Transforms: []anim.Transform{
+var keyframe04 = anim.Keyframe{SampleTime: 0.6, Transforms: []anim.Transform{
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, -10}},
@@ -157,7 +161,7 @@ var keyframe04 = anim.Keyframe{Ticks: 120, Transforms: []anim.Transform{
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}}}}
-var keyframe10 = anim.Keyframe{Ticks: 0, Transforms: []anim.Transform{
+var keyframe10 = anim.Keyframe{SampleTime: 0, Transforms: []anim.Transform{
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, -10}},
@@ -173,7 +177,7 @@ var keyframe10 = anim.Keyframe{Ticks: 0, Transforms: []anim.Transform{
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{20, 0, 0}},
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{-90, 0, 0}},
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}}}}
-var keyframe11 = anim.Keyframe{Ticks: 30, Transforms: []anim.Transform{
+var keyframe11 = anim.Keyframe{SampleTime: 0.15, Transforms: []anim.Transform{
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{0, 0.025, 0}, [3]float32{0, 0, 0}},
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 20, 0}},
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, -10}},
@@ -189,7 +193,7 @@ var keyframe11 = anim.Keyframe{Ticks: 30, Transforms: []anim.Transform{
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{80, 0, 0}},
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{-40, 0, 0}},
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{-50, 0, 0}}}}
-var keyframe12 = anim.Keyframe{Ticks: 60, Transforms: []anim.Transform{
+var keyframe12 = anim.Keyframe{SampleTime: 0.3, Transforms: []anim.Transform{
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, -10}},
@@ -205,7 +209,7 @@ var keyframe12 = anim.Keyframe{Ticks: 60, Transforms: []anim.Transform{
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{-10, 0, 0}}}}
-var keyframe13 = anim.Keyframe{Ticks: 90, Transforms: []anim.Transform{
+var keyframe13 = anim.Keyframe{SampleTime: 0.45, Transforms: []anim.Transform{
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{0, 0.025, 0}, [3]float32{0, 0, 0}},
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, -20, 0}},
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 20, 0}},
@@ -221,7 +225,7 @@ var keyframe13 = anim.Keyframe{Ticks: 90, Transforms: []anim.Transform{
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{-40, 0, 0}},
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{-20, 0, 0}},
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{-20, 0, 0}}}}
-var keyframe14 = anim.Keyframe{Ticks: 120, Transforms: []anim.Transform{
+var keyframe14 = anim.Keyframe{SampleTime: 0.6, Transforms: []anim.Transform{
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, -10}},

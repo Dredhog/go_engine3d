@@ -1,8 +1,8 @@
 package anim
 
 import (
-	"testing"
 	"github.com/go-gl/mathgl/mgl32"
+	"testing"
 )
 
 var first = Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}}
@@ -15,18 +15,18 @@ var four = mgl32.Vec3{4, 5, 6}
 var five = mgl32.Vec3{5, 6, 7}
 var six = mgl32.Vec3{6, 7, 8}
 
-func BenchmarkFuncLerp(b *testing.B){
+func BenchmarkFuncLerp(b *testing.B) {
 	var result Transform = Transform{}
 	var t float32 = 0.5
-	for i := 0; i < b.N; i++{
+	for i := 0; i < b.N; i++ {
 		LerpTransform(&first, &second, t, &result)
 	}
 }
 
-func BenchmarkInlineExpanded(b *testing.B){
+func BenchmarkInlineExpanded(b *testing.B) {
 	var result Transform
 	var t float32 = 0.5
-	for i := 0; i < b.N; i++{
+	for i := 0; i < b.N; i++ {
 		result.Translate[0] = first.Translate[0]*(1-t) + second.Translate[0]*t
 		result.Translate[1] = first.Translate[1]*(1-t) + second.Translate[1]*t
 		result.Translate[2] = first.Translate[2]*(1-t) + second.Translate[2]*t
@@ -39,40 +39,40 @@ func BenchmarkInlineExpanded(b *testing.B){
 	}
 }
 
-func BenchmarkMathlib(b *testing.B){
+func BenchmarkMathlib(b *testing.B) {
 	var result mgl32.Vec3
 	var t float32
-	for i := 0; i < b.N; i++{
-		t = float32(i)/float32(b.N)
-		result = four.Mul(1-t).Add(one .Mul(t))
-		result = five.Mul(1-t).Add(two .Mul(t))
-		result = six.Mul(1-t).Add(three.Mul(t))
+	for i := 0; i < b.N; i++ {
+		t = float32(i) / float32(b.N)
+		result = four.Mul(1 - t).Add(one.Mul(t))
+		result = five.Mul(1 - t).Add(two.Mul(t))
+		result = six.Mul(1 - t).Add(three.Mul(t))
 	}
 	_ = result
 }
 
-func BenchmarkNormalizationMathLib(b *testing.B){
+func BenchmarkNormalizationMathLib(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		one = one.Normalize()
 	}
 }
 
-func BenchmarkNormalization(b *testing.B){
+func BenchmarkNormalization(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		if temp := one.Add(two.Mul(10)); temp.Len() < 100{
+		if temp := one.Add(two.Mul(10)); temp.Len() < 100 {
 			one = temp
 		}
 	}
 }
 
-func BenchmarkZeroing(b *testing.B){
-	for i := 0; i < b.N; i++{
+func BenchmarkZeroing(b *testing.B) {
+	for i := 0; i < b.N; i++ {
 		three = mgl32.Vec3{}
 	}
 }
 
-func BenchmarkZeroingInline(b *testing.B){
-	for i := 0; i < b.N; i++{
+func BenchmarkZeroingInline(b *testing.B) {
+	for i := 0; i < b.N; i++ {
 		three[0] = 0
 		three[1] = 0
 		three[2] = 0

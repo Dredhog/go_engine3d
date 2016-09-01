@@ -25,9 +25,6 @@ const (
 	screenHeight = 1080
 	fps          = 120
 )
-var xAxis = mgl32.Vec3{1, 0, 0}
-var yAxis = mgl32.Vec3{0, 1, 0}
-var zAxis = mgl32.Vec3{0, 0, 1}
 
 func main() {
 	//Set up glfw
@@ -92,15 +89,16 @@ func main() {
 		//Decalring gameplay/animation/framerate variables
 		toComMatrix := mgl32.Translate3D(0, 0.7, 0)
 		toComInvMatrix := toComMatrix.Inv()
-		camera := newCamera(mgl32.Vec3{0, 1.2, 5}, mgl32.Vec3{0, -1, -6})
-		player := player{Dir: zAxis, Up: yAxis}
+		worldGizmo := gizmo{xAxis: mgl32.Vec3{1, 0, 0}, yAxis: mgl32.Vec3{0, 1, 0}, zAxis: mgl32.Vec3{0, 0, 1}}
+		camera := newCamera(mgl32.Vec3{0, 1.2, 5}, mgl32.Vec3{0, -1, -6}, &worldGizmo)
+		player := player{Dir: worldGizmo.zAxis, Up: worldGizmo.yAxis}
 		lightPosition := mgl32.Vec3{0, 1, 2}
 
-		walkAnimation := anim.Animation{Keyframes: []anim.Keyframe{keyframe00, keyframe01, keyframe02, keyframe03, keyframe04}}
-		walkAnimation.SetTotalTicks()
-		runAnimation := anim.Animation{Keyframes: []anim.Keyframe{keyframe10, keyframe11, keyframe12, keyframe13, keyframe14}}
-		runAnimation.SetTotalTicks()
-		playerEntity.Animator = &anim.Animator{CurrentAnimation: &walkAnimation, UpcomingAnimation: &runAnimation, CurrentKeyframe: anim.Keyframe{Transforms: make([]anim.Transform, len(keyframe00.Transforms))}, UpcomingKeyframe: anim.Keyframe{Transforms: make([]anim.Transform, len(keyframe00.Transforms))}, ResultKeyframe: anim.Keyframe{Transforms: make([]anim.Transform, len(keyframe00.Transforms))}}
+		walkClip := anim.Clip{Keyframes: []anim.Keyframe{keyframe00, keyframe01, keyframe02, keyframe03, keyframe04}}
+		walkClip.SetDuration()
+		runClip := anim.Clip{Keyframes: []anim.Keyframe{keyframe10, keyframe11, keyframe12, keyframe13, keyframe14}}
+		runClip.SetDuration()
+		playerEntity.Animator = &anim.Animator{CurrentClip: &walkClip, UpcomingClip: &runClip, CurrentKeyframe: anim.Keyframe{Transforms: make([]anim.Transform, len(keyframe00.Transforms))}, UpcomingKeyframe: anim.Keyframe{Transforms: make([]anim.Transform, len(keyframe00.Transforms))}, ResultKeyframe: anim.Keyframe{Transforms: make([]anim.Transform, len(keyframe00.Transforms))}}
 		frameTimer := frameTimer{gameLoopStart: float32(glfw.GetTime()), desiredFrameTime: 1 / float32(fps)}
 		var t float32 = 0
 
@@ -110,13 +108,13 @@ func main() {
 
 			//Get input
 			glfw.PollEvents()
-			handleInput(window, &frameTimer, &player, &camera, &lightPosition, &t)
+			handleInput(window, &worldGizmo, &frameTimer, &player, &camera, &lightPosition, &t)
 
 			//update variables
 			modelRotationMatrix := toComMatrix.Mul4(mgl32.HomogRotate3D(player.TiltAngle, player.TiltAxis).Mul4(mgl32.HomogRotate3DY(player.Angle).Mul4(toComInvMatrix)))
 			modelMatrix := mgl32.Translate3D(player.Position[0], player.Position[1], player.Position[2]).Mul4(modelRotationMatrix)
 
-			if err := playerEntity.Animator.BlendAnimations(frameTimer.animTicks, t); err != nil {
+			if err := playerEntity.Animator.BlendClips(frameTimer.frameStart, t); err != nil {
 				panic(err)
 			}
 			if err = playerEntity.Skeleton.ApplyKeyframe(&playerEntity.Animator.ResultKeyframe); err != nil {
@@ -128,12 +126,12 @@ func main() {
 			gl.UniformMatrix4fv(modelUniform, 1, false, &modelMatrix[0])
 			gl.UniformMatrix4fv(modelRotationUniform, 1, false, &modelRotationMatrix[0])
 			gl.Uniform3f(lightPosUniform, lightPosition[0], lightPosition[1], lightPosition[2])
-			gl.UniformMatrix4fv(boneUniforms, 15, false, &playerEntity.Skeleton.FinalMatrices[0][0])
+			gl.UniformMatrix4fv(boneUniforms, 15, false, &playerEntity.Skeleton.GlobalPoseMatrices[0][0])
 
 			//FPS display, and debug information
 			if frameTimer.isSecondMark{
 				fmt.Println("fps:", frameTimer.currentFps)
-				fmt.Printf("ticks: %v;\nt: %v\n", frameTimer.animTicks, t)
+				fmt.Printf("time: %v;\nt: %v\n", frameTimer.frameStart, t)
 				fmt.Printf("speed: %v;\nAcceleration: %v;\n\n", player.Velocity.Len(), player.AccDirection.Len())
 			}
 
@@ -155,12 +153,11 @@ func cap(a float32, i *float32, b float32) {
 }
 
 //Input function
-func handleInput(window *glfw.Window, frameTimer *frameTimer, player *player, camera *camera, lightPosition *mgl32.Vec3, t *float32) {
+func handleInput(window *glfw.Window, world *gizmo, frameTimer *frameTimer, player *player, camera *camera, lightPosition *mgl32.Vec3, t *float32) {
 	deltaTime := frameTimer.deltaTime
-	ticks := &frameTimer.animTicks
 	var lightSpeed float32 = 5 * deltaTime
 	var maxTiltAngle float32 = 0.25
-	var tickSpeed float32 = 200
+	//var tickSpeed float32 = 200
 	var maxSpeed float32 = 10
 	var jumpVerticalSpeed float32 = 5
 	var angularVelocity float32 = 15
@@ -178,7 +175,7 @@ func handleInput(window *glfw.Window, frameTimer *frameTimer, player *player, ca
 	}
 	if !player.InAir && window.GetKey(glfw.KeySpace) == glfw.Press {
 		player.InAir = true
-		player.Velocity = player.Velocity.Add(yAxis.Mul(jumpVerticalSpeed))
+		player.Velocity = player.Velocity.Add(world.yAxis.Mul(jumpVerticalSpeed))
 	}
 
 	//PLAYER MOTION
@@ -198,7 +195,7 @@ func handleInput(window *glfw.Window, frameTimer *frameTimer, player *player, ca
 	if !player.InAir {
 		if accDirLen := player.AccDirection.Len(); accDirLen != 0 {
 			player.AccDirection = player.AccDirection.Mul(1 / accDirLen)
-			if temp := player.Up.Normalize().Add(player.AccDirection.Mul(3 * deltaTime)); math.Acos(float64(temp.Normalize().Dot(yAxis))) < float64(maxTiltAngle) {
+			if temp := player.Up.Normalize().Add(player.AccDirection.Mul(3 * deltaTime)); math.Acos(float64(temp.Normalize().Dot(world.yAxis))) < float64(maxTiltAngle) {
 				player.Up = temp.Mul(1 / player.Up[1])
 			}
 			player.Velocity = player.Velocity.Add(player.AccDirection.Mul(acc *  deltaTime))
@@ -207,7 +204,7 @@ func handleInput(window *glfw.Window, frameTimer *frameTimer, player *player, ca
 			player.Velocity = player.Velocity.Sub(player.Velocity.Mul((1 / speed) * deltaTime * deacc))
 		} else {
 			player.Velocity = mgl32.Vec3{}
-			tickSpeed = 0
+			//tickSpeed = 0
 		}
 		//Limit the player's velocity
 		if speed := player.Velocity.Len(); speed != 0 {
@@ -217,8 +214,8 @@ func handleInput(window *glfw.Window, frameTimer *frameTimer, player *player, ca
 			}
 		}
 	} else {
-		player.Velocity = player.Velocity.Add(yAxis.Mul(-9.81 * deltaTime))
-		tickSpeed = 50
+		player.Velocity = player.Velocity.Add(world.yAxis.Mul(-9.81 * deltaTime))
+		//tickSpeed = 50
 	}
 	//basic falling collision
 	if player.Position[1] < 0 {
@@ -229,11 +226,10 @@ func handleInput(window *glfw.Window, frameTimer *frameTimer, player *player, ca
 	//ANIMATION BLENDING
 	*t = player.Velocity.Len() / maxSpeed
 	cap(0, t, 1)
-	tickSpeed += *t * 150
-	*ticks += tickSpeed * deltaTime
+	//tickSpeed += *t * 150
 
 	//Determine the player's tilt
-	if tiltAxis := yAxis.Cross(player.Up.Normalize()); tiltAxis.Len() != 0 {
+	if tiltAxis := world.yAxis.Cross(player.Up.Normalize()); tiltAxis.Len() != 0 {
 		player.TiltAxis = tiltAxis
 		player.TiltAngle = float32(math.Asin(float64(player.TiltAxis.Len())))
 		player.TiltAxis = player.TiltAxis.Normalize()
@@ -244,7 +240,7 @@ func handleInput(window *glfw.Window, frameTimer *frameTimer, player *player, ca
 
 	//Determine the player's rotation around the y axis
 	dtr := float32(math.Pi / 180)
-	player.DestAngle = float32(math.Acos(float64(player.Dir.Dot(zAxis))))
+	player.DestAngle = float32(math.Acos(float64(player.Dir.Dot(world.zAxis))))
 	if player.Dir[0] < 0 {
 		player.DestAngle = (-1)*player.DestAngle + 360*dtr
 	}
