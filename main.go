@@ -24,7 +24,7 @@ func init() {
 const (
 	screenWidth  = 1920
 	screenHeight = 1080
-	fps          = 120
+	fps          = 122
 )
 
 func main() {
@@ -60,7 +60,9 @@ func main() {
 		gl.Enable(gl.DEPTH_TEST)
 		gl.DepthFunc(gl.LESS)
 		gl.ClearColor(0.2, 0.3, 0.5, 1.0)
+		window.SetInputMode(glfw.CursorMode, glfw.CursorDisabled)
 
+		//LoadPlayer
 		mesh, skeleton, err0, err1 := collada.ParseMeshSkeleton("data/model/turner.dae")
 		if err0 != nil {
 			log.Fatalln(err0)
@@ -70,7 +72,9 @@ func main() {
 		model := types.Model{Mesh: mesh}
 		model.Animator, err = anim.NewAnimator(skeleton, []anim.Animation{anim.Animation{Duration: keyframe04.SampleTime, Keyframes: []anim.Keyframe{keyframe00, keyframe01, keyframe02, keyframe03, keyframe04}},
 			anim.Animation{Duration: keyframe14.SampleTime, Keyframes: []anim.Keyframe{keyframe10, keyframe11, keyframe12, keyframe13, keyframe14}},
-			anim.Animation{Duration: keyframe21.SampleTime, Keyframes: []anim.Keyframe{keyframe20, keyframe21}}})
+			anim.Animation{Duration: keyframe21.SampleTime, Keyframes: []anim.Keyframe{keyframe20, keyframe21}},
+			anim.Animation{Duration: keyframe32.SampleTime, Keyframes: []anim.Keyframe{keyframe30, keyframe31, keyframe32}},
+			anim.Animation{Duration: keyframe41.SampleTime, Keyframes: []anim.Keyframe{keyframe40, keyframe41}}})
 		if err != nil {
 			panic(err)
 		}
@@ -88,15 +92,30 @@ func main() {
 		}
 		model.Mesh.Textures = []types.Texture{{playerSpecularTexture, "specular"}, {playerDiffuseTexture, "diffuse"}}
 
+		//Load Light
 		light, _, err0, _ := collada.ParseMeshSkeleton("data/model/light.dae")
 		if err != nil {
 			log.Fatalln(err0)
 		}
 		lightShader, err := shader.NewProgram("light")
 		if err != nil {
-			fmt.Print(err)
 			log.Fatalln(err)
 		}
+
+		//Load Level
+		level, _, err0, _ := collada.ParseMeshSkeleton("data/model/dust2x2.dae")
+		if err0 != nil {
+			log.Fatalln(err0)
+		}
+		environmentShader, err := shader.NewProgram("environment")
+		if err != nil {
+			log.Fatalln(err)
+		}
+		levelDiffuseTexture, err := texture.NewTexture("squares.png")
+		if err != nil {
+			log.Fatalln(err)
+		}
+		level.Textures = []types.Texture{{levelDiffuseTexture, "diffuse"}}
 		//Get uniforms from shader
 		vpUniform := gl.GetUniformLocation(playerShader, gl.Str("vp_mat\x00"))
 		modelUniform := gl.GetUniformLocation(playerShader, gl.Str("model_mat\x00"))
@@ -108,12 +127,13 @@ func main() {
 		toComMatrix := mgl32.Translate3D(0, 0.7, 0)
 		toComInvMatrix := toComMatrix.Inv()
 		worldGizmo := gizmo{xAxis: mgl32.Vec3{1, 0, 0}, yAxis: mgl32.Vec3{0, 1, 0}, zAxis: mgl32.Vec3{0, 0, 1}}
-		camera := newCamera(mgl32.Vec3{0, 1.2, 5}, mgl32.Vec3{0, -1, -6}, &worldGizmo)
 		player := player{Dir: worldGizmo.zAxis, Up: worldGizmo.yAxis}
-		lightPosition := mgl32.Vec3{0, 1, 2}
+		camera := newCamera(mgl32.Vec3{0, 1.5, 5}, &player.Position, &worldGizmo)
+		lightPosition := mgl32.Vec3{1.5, 1, 2}
 		frameTimer := frameTimer{gameLoopStart: float32(glfw.GetTime()), desiredFrameTime: 1 / float32(fps)}
-		t := float32(0)
-		h := float32(0.5)
+		speed := float32(0)
+		head := float32(0.5)
+		height := float32(0)
 
 		for !window.ShouldClose() {
 			//Update the time manager
@@ -121,17 +141,29 @@ func main() {
 
 			//Get input
 			glfw.PollEvents()
-			handleInput(window, &worldGizmo, &frameTimer, &player, &camera, &lightPosition, &t, &h)
+			handleInput(window, &worldGizmo, &frameTimer, &player, &camera, &lightPosition, &speed, &head, &height)
 
 			//update variables
+			camera.Update(window.GetCursorPos())
 			modelRotationMatrix := toComMatrix.Mul4(mgl32.HomogRotate3D(player.TiltAngle, player.TiltAxis).Mul4(mgl32.HomogRotate3DY(player.Angle).Mul4(toComInvMatrix)))
 			modelMatrix := mgl32.Translate3D(player.Position[0], player.Position[1], player.Position[2]).Mul4(modelRotationMatrix)
-			model.Animator.Update(frameTimer.deltaTime, t, h)
+			model.Animator.Update(frameTimer.deltaTime,	func (){
+										a := model.Animator
+										a.SampleAtGlobalTime(0, 0)	//Sample Walk
+										a.SampleAtGlobalTime(1, 1)	//Sample Run
+										a.LinearBlend(0, 1, speed, 1)	//LERP(Walk, Run) => move
+										a.SampleAtGlobalTime(3, 0)	//Sample Idle
+										a.LinearBlend(0, 1, speed, 0)	//LERP(move, Idle) => ground
+										a.SampleLinear(4, height, 1)	//Sample Jump
+										a.LinearBlend(0, 1, height, 0)	//LERP(ground, Jump) => body
+										a.SampleLinear(2, head, 1)	//Sample head Turn
+										a.AdditiveBlend(0, 1, 1.0, 0)	//AdditiveBlend(body, head) => final
+									})
 
 			//FPS display, and debug information
 			if frameTimer.isSecondMark {
 				fmt.Println("fps:", frameTimer.currentFps)
-				fmt.Printf("time: %v;\nt: %v\n", frameTimer.frameStart, t)
+				fmt.Printf("time: %v;\n", frameTimer.frameStart)
 				fmt.Printf("speed: %v;\nAcceleration: %v;\n\n", player.Velocity.Len(), player.AccDirection.Len())
 			}
 
@@ -139,14 +171,18 @@ func main() {
 
 			//Update the light shader
 			gl.UseProgram(lightShader)
-			//Upload unifrom variables
 			gl.UniformMatrix4fv(gl.GetUniformLocation(lightShader, gl.Str("vp_mat\x00")), 1, false, &camera.VPMatrix[0])
 			gl.Uniform3f(gl.GetUniformLocation(lightShader, gl.Str("light_position\x00")), lightPosition[0], lightPosition[1], lightPosition[2])
 			light.Draw(lightShader)
 
+			//Update the enviromnet shader
+			gl.UseProgram(environmentShader)
+			gl.UniformMatrix4fv(gl.GetUniformLocation(environmentShader, gl.Str("vp_mat\x00")), 1, false, &camera.VPMatrix[0])
+			gl.Uniform3f(gl.GetUniformLocation(environmentShader, gl.Str("light_position\x00")), lightPosition[0], lightPosition[1], lightPosition[2])
+			level.Draw(environmentShader)
+
 			//Update the player shader
 			gl.UseProgram(playerShader)
-			//Upload unifrom variables
 			gl.UniformMatrix4fv(vpUniform, 1, false, &camera.VPMatrix[0])
 			gl.UniformMatrix4fv(modelUniform, 1, false, &modelMatrix[0])
 			gl.UniformMatrix4fv(modelRotationUniform, 1, false, &modelRotationMatrix[0])
@@ -158,12 +194,20 @@ func main() {
 	}(window)
 }
 
-func clamp(a float32, i *float32, b float32) {
-	if *i < a {
-		*i = a
-	} else if *i > b {
-		*i = b
+func clamp(a float32, i float32, b float32) float32{
+	if i < a {
+		return a
+	} else if i > b {
+		return b
 	}
+	return i
+}
+
+func abs(a float32) float32{
+	if a < 0 {
+		return -a
+	}
+	return a
 }
 
 func max(a, b float32) float32 {
@@ -174,12 +218,11 @@ func max(a, b float32) float32 {
 }
 
 //Input function
-func handleInput(window *glfw.Window, world *gizmo, frameTimer *frameTimer, player *player, camera *camera, lightPosition *mgl32.Vec3, s, h *float32) {
+func handleInput(window *glfw.Window, world *gizmo, frameTimer *frameTimer, player *player, camera *camera, lightPosition *mgl32.Vec3, speed, head, height *float32) {
 	var maxTiltAngle float32 = 0.25
 	var lightSpeed float32 = 10
 	var maxSpeed float32 = 10
-	//var headTurnSpeed float32 = 5
-	var jumpVerticalSpeed float32 = 5
+	var initialJumpSpeed float32 = 5
 	var angularVelocity float32 = 15
 	var acc float32 = 30
 	var deacc float32 = 15
@@ -195,7 +238,7 @@ func handleInput(window *glfw.Window, world *gizmo, frameTimer *frameTimer, play
 	deltaTime := frameTimer.deltaTime
 	if !player.InAir && window.GetKey(glfw.KeySpace) == glfw.Press {
 		player.InAir = true
-		player.Velocity = player.Velocity.Add(world.yAxis.Mul(jumpVerticalSpeed))
+		player.Velocity = player.Velocity.Add(world.yAxis.Mul(initialJumpSpeed))
 	}
 
 	//PLAYER MOTION
@@ -288,42 +331,48 @@ func handleInput(window *glfw.Window, world *gizmo, frameTimer *frameTimer, play
 	}
 	//LIGHT MOTION
 	if window.GetKey(glfw.KeyUp) == glfw.Press {
-		lightPosition[2] -= lightSpeed * deltaTime
+		*lightPosition = lightPosition.Add(camera.Forward.Mul(lightSpeed * deltaTime))
 	}
 	if window.GetKey(glfw.KeyDown) == glfw.Press {
-		lightPosition[2] += lightSpeed * deltaTime
+		*lightPosition = lightPosition.Add(camera.Forward.Mul(-lightSpeed * deltaTime))
 	}
 	if window.GetKey(glfw.KeyLeft) == glfw.Press {
-		lightPosition[0] -= lightSpeed * deltaTime
+		*lightPosition = lightPosition.Add(camera.Left.Mul(lightSpeed * deltaTime))
 	}
 	if window.GetKey(glfw.KeyRight) == glfw.Press {
-		lightPosition[0] += lightSpeed * deltaTime
+		*lightPosition = lightPosition.Add(camera.Left.Mul(-lightSpeed * deltaTime))
 	}
-	//HeadRotation
+	//ANIMATION BLENDING
 	toLight := lightPosition.Sub(player.Position)
 	toLight[1] = 0
 	toLight = toLight.Normalize()
 	t := toLight.Dot(player.Dir)
 	t += -1
-	clamp(-1, &t, 0)
-	//right hemisphere, where 0's at 12 o'clock
+	t = clamp(-1, t, 0)
 	if toLight.Cross(player.Dir)[1] < 0 {
 		t *= -1
 	}
-	fmt.Println(t)
-	*h += 4 * (t - (*h)) * deltaTime
-	//ANIMATION BLENDING
-	*s = player.Velocity.Len() / maxSpeed
-	clamp(-1, h, 1)
-	clamp(0, s, 1)
+	*head += 4 * (t - (*head)) * deltaTime
+	*speed = player.Velocity.Len() / maxSpeed
+	*head = clamp(-1, *head, 1)
+	*speed = clamp(0, *speed, 1)
+	//jump blend
+	maxFallTime := initialJumpSpeed/9.81
+	maxHeight := maxFallTime*maxFallTime*9.81/2
+	if player.Velocity[1] > 0{
+		*height = clamp(0, 2*player.Position[1]/maxHeight, 1)
+	} else {
+		*height = player.Position[1]/maxHeight
+	}
 	//RESET BUTTON
 	if window.GetKey(glfw.KeyR) == glfw.Press {
-		*lightPosition = mgl32.Vec3{0, 1, 2}
+		*lightPosition = mgl32.Vec3{1.5, 1, 2}
 		player.Position = mgl32.Vec3{0, 0, 0}
 		player.Velocity = mgl32.Vec3{0, 0, 0}
 		player.Dir = mgl32.Vec3{0, 0, 1}
 		player.Up = mgl32.Vec3{0, 1, 0}
 		player.TiltAngle = 0
-		*h = 0
+		*head = 0
 	}
 }
+

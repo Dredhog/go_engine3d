@@ -23,7 +23,7 @@ func NewAnimator(skeleton *Skeleton, animations []Animation) (*Animator, error) 
 		a.animationStates[i].playbackRate = 1
 	}
 	a.animationStates[2].loop = false
-	a.workingPoses = make([]Keyframe, 3)
+	a.workingPoses = make([]Keyframe, 2)
 	for i := range a.workingPoses {
 		a.workingPoses[i].Transforms = make([]Transform, boneCount)
 	}
@@ -58,13 +58,9 @@ func (a *Animator) calcGlobalPoseMatrix(boneIndex int) mgl32.Mat4 {
 	return a.GlobalPoseMatrices[boneIndex]
 }
 
-func (a *Animator) Update(deltaTime float32, s, h float32) {
+func (a *Animator) Update(deltaTime float32, userFunc func()) {
 	a.globalTime += deltaTime
-	a.SampleAtGlobalTime(0, 0)
-	a.SampleAtGlobalTime(1, 1)
-	a.LinearBlend(0, 1, s, 0)
-	a.SampleLinear(2, h, 1)
-	a.AdditiveBlend(0, 1, 1.0, 0)
+	userFunc()
 	a.localPose = a.workingPoses[0]
 	a.CalcGlobalPoseMatrices()
 }
