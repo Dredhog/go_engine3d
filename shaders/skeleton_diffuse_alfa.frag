@@ -18,7 +18,7 @@ void main()
 	float light_dist = length(light_position - Position);
 	float light_dist_norm = (light_dist < 0) ? -light_dist : light_dist;
 	float ligth_dist_squared = light_dist_norm  * light_dist_norm;
-	float light_inverse_squared = 10/ligth_dist_squared;
+	float light_inverse_squared = 50/ligth_dist_squared;
 	float light_squared_norm = (light_inverse_squared < 1) ? light_inverse_squared : 1;  
 	
 	//Phong light diffuse and alfa effect

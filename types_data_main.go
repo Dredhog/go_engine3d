@@ -15,6 +15,19 @@ type gizmo struct{
 	zAxis mgl32.Vec3
 }
 
+type player struct {
+	Position     mgl32.Vec3
+	Velocity     mgl32.Vec3
+	AccDirection mgl32.Vec3
+	Up           mgl32.Vec3
+	TiltAxis     mgl32.Vec3
+	Dir          mgl32.Vec3
+	TiltAngle    float32
+	DestAngle    float32
+	Angle        float32
+	InAir        bool
+}
+
 type camera struct {
 	Position         mgl32.Vec3
 	Direction        mgl32.Vec3
@@ -29,24 +42,11 @@ type frameTimer struct {
 	gameLoopStart    float32
 	frameStart       float32
 	deltaTime        float32
+	desiredFrameTime float32
 	frames           int
 	seconds          int
-	isSecondMark     bool
 	currentFps	 int
-	desiredFrameTime float32
-}
-
-type player struct {
-	Position     mgl32.Vec3
-	Velocity     mgl32.Vec3
-	AccDirection mgl32.Vec3
-	Up           mgl32.Vec3
-	TiltAxis     mgl32.Vec3
-	Dir          mgl32.Vec3
-	TiltAngle    float32
-	DestAngle    float32
-	Angle        float32
-	InAir        bool
+	isSecondMark     bool
 }
 
 func newCamera(position, direction mgl32.Vec3, world *gizmo) camera {
@@ -240,4 +240,36 @@ var keyframe14 = anim.Keyframe{SampleTime: 0.6, Transforms: []anim.Transform{
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{-10, 0, 0}},
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{20, 0, 0}},
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{-90, 0, 0}},
+	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}}}}
+var keyframe20 = anim.Keyframe{SampleTime: 0, Transforms: []anim.Transform{
+	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
+	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, -50, 0}},
+	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
+	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
+	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
+	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
+	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
+	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
+	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, -40, 0}},
+	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
+	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
+	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
+	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
+	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
+	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}}}}
+var keyframe21 = anim.Keyframe{SampleTime: 1, Transforms: []anim.Transform{
+	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
+	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 50, 0}},
+	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
+	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
+	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
+	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
+	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
+	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
+	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 40, 0}},
+	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
+	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
+	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
+	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
+	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}}}}
