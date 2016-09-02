@@ -71,28 +71,25 @@ func splitAndRemoveEmpty(str string) []string {
 }
 
 
-func ParseModel(fileName string) (*types.Model, error) {
+func ParseMeshSkeleton(fileName string) (*types.Mesh, *anim.Skeleton, error) {
 	collada, err := Parse(fileName)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	if collada.LibraryGeometries == nil {
-		return nil, fmt.Errorf("collada to mesh: no geometry data found in %v\n", fileName)
+		return nil, nil, fmt.Errorf("collada to mesh: no geometry data found in %v\n", fileName)
 	}
-	model := types.Model{}
-
 	meshCollada := &collada.LibraryGeometries.Geometries[0].Meshes[0]
 	controllerCollada := &collada.LibraryControllers.Controllers[0]
-	model.Mesh, err = extractMesh(meshCollada, controllerCollada)
+	mesh, err := extractMesh(meshCollada, controllerCollada)
 	if err != nil {
-		return nil, fmt.Errorf("collada mode: error extracting mesh : %v", err)
+		return nil, nil, fmt.Errorf("collada mode: error extracting mesh : %v", err)
 	}
-	model.Skeleton, err = extractSkeleton(&controllerCollada.Skin, collada.LibraryVisualScenes)
+	skeleton, err := extractSkeleton(&controllerCollada.Skin, collada.LibraryVisualScenes)
 	if err != nil {
-		return nil, fmt.Errorf("collada mode: error extracting skeleton: %v", err)
+		return nil, nil, fmt.Errorf("collada mode: error extracting skeleton: %v", err)
 	}
-
-	return &model, nil
+	return mesh, skeleton, nil
 }
 
 func extractMesh(meshCollada *mesh, controllerCollada *controller) (*types.Mesh, error) {
@@ -206,9 +203,8 @@ func extractSkeleton(skin *skin, libraryVisualScenes *libraryVisualScenes) (*ani
 			bones := make([]anim.Bone, len(boneNames))
 			registerBoneAndItsChildren(bones, &node, sidToIndex[node.Name], bindShapeMatrix, sidToIndex, sidToInvBindMat)
 
-			skeleton := anim.NewSkeleton(bones, bindShapeMatrix, sidToIndex[node.Sid])
-			skeleton.RootIndex = sidToIndex[node.Name]
-			return skeleton, nil
+			skeleton := anim.Skeleton{bones, bindShapeMatrix, sidToIndex[node.Sid]}
+			return &skeleton, nil
 		}
 	}
 	return nil, fmt.Errorf("collada: no root node found in skeleton data")

@@ -3,43 +3,40 @@ package anim
 import "github.com/go-gl/mathgl/mgl32"
 
 type Skeleton struct {
-	Transform
-	RootIndex          int
-	Bones              []Bone
-	BindShapeMatrix    mgl32.Mat4
-	GlobalPoseMatrices []mgl32.Mat4
+	Bones           []Bone
+	BindShapeMatrix mgl32.Mat4
+	RootIndex       int
 }
 
 type Bone struct {
-	Name                string
-	Index               int
-	ParentIndex         int
-	BindPose            mgl32.Mat4
-	InverseBindPose     mgl32.Mat4
-	localPoseMatrix     mgl32.Mat4
-	globalPoseMatrixSet bool
+	Name            string
+	BindPose        mgl32.Mat4
+	InverseBindPose mgl32.Mat4
+	ParentIndex     int
+	Index           int
 }
 
 type Animator struct {
-	Clips             []Clip
-	CurrentClip       *Clip
-	UpcomingClip      *Clip
-	CurrentKeyframe   Keyframe
-	UpcomingKeyframe  Keyframe
-	ResultKeyframe    Keyframe
+	animations         []Animation
+	animationStates    []animationState
+	GlobalPoseMatrices []mgl32.Mat4
+	localPoseMatrices  []mgl32.Mat4
+	localPose          Keyframe
+	globalPosesSet     []bool
+	globalTime         float32
+	s                  *Skeleton
 }
 
-type Clip struct {
+type Animation struct {
 	Keyframes []Keyframe
 	Duration  float32
 }
 
-type ClipState struct {
-	index        int
-	startTime    float32
-	playbackRate float32
-	LocalPose    Keyframe
-	GlobalPose   Keyframe
+type animationState struct {
+	animationIndex int
+	startTime      float32
+	playbackRate   float32
+	loop           bool
 }
 
 type Keyframe struct {

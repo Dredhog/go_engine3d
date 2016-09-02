@@ -1,8 +1,9 @@
 package anim
 
 import (
-	"github.com/go-gl/mathgl/mgl32"
 	"testing"
+
+	"github.com/go-gl/mathgl/mgl32"
 )
 
 var first = Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}}
@@ -19,7 +20,7 @@ func BenchmarkFuncLerp(b *testing.B) {
 	var result Transform = Transform{}
 	var t float32 = 0.5
 	for i := 0; i < b.N; i++ {
-		LerpTransform(&first, &second, t, &result)
+		lerpTransform(&first, &second, t, &result)
 	}
 }
 

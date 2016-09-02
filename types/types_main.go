@@ -29,6 +29,5 @@ type Mesh struct {
 
 type Model struct {
 	Mesh     *Mesh
-	Skeleton *anim.Skeleton
 	Animator *anim.Animator
 }

@@ -2,12 +2,13 @@ package main
 
 import (
 	"fmt"
-	"github.com/go-gl/gl/v3.3-core/gl"
-	"github.com/go-gl/glfw/v3.2/glfw"
-	"github.com/go-gl/mathgl/mgl32"
 	"log"
 	"math"
 	"runtime"
+
+	"github.com/go-gl/gl/v3.3-core/gl"
+	"github.com/go-gl/glfw/v3.2/glfw"
+	"github.com/go-gl/mathgl/mgl32"
 
 	"training/engine/anim"
 	"training/engine/load/shader"
@@ -60,9 +61,15 @@ func main() {
 		gl.DepthFunc(gl.LESS)
 		gl.ClearColor(0.2, 0.3, 0.5, 1.0)
 
-		playerEntity, err := collada.ParseModel("data/model/turner.dae")
+		mesh, skeleton, err := collada.ParseMeshSkeleton("data/model/turner.dae")
 		if err != nil {
 			log.Fatalln(err)
+		}
+		model := types.Model{Mesh: mesh}
+		model.Animator, err = anim.NewAnimator(skeleton, []anim.Animation{anim.Animation{Duration: keyframe04.SampleTime, Keyframes: []anim.Keyframe{keyframe00, keyframe01, keyframe02, keyframe03, keyframe04}},
+			anim.Animation{Duration: keyframe14.SampleTime, Keyframes: []anim.Keyframe{keyframe10, keyframe11, keyframe12, keyframe13, keyframe14}}})
+		if err != nil {
+			panic(err)
 		}
 		playerShader, err := shader.NewProgram("skeleton_diffuse_alfa")
 		if err != nil {
@@ -77,7 +84,7 @@ func main() {
 			log.Fatalln(err)
 		}
 		fmt.Println("diffuse, specular = ", playerDiffuseTexture, ", ", playerSpecularTexture)
-		playerEntity.Mesh.Textures = []types.Texture{{playerSpecularTexture, "specular"}, {playerDiffuseTexture, "diffuse"}}
+		model.Mesh.Textures = []types.Texture{{playerSpecularTexture, "specular"}, {playerDiffuseTexture, "diffuse"}}
 
 		//Get uniforms from shader
 		vpUniform := gl.GetUniformLocation(playerShader, gl.Str("vp_mat\x00"))
@@ -93,14 +100,8 @@ func main() {
 		camera := newCamera(mgl32.Vec3{0, 1.2, 5}, mgl32.Vec3{0, -1, -6}, &worldGizmo)
 		player := player{Dir: worldGizmo.zAxis, Up: worldGizmo.yAxis}
 		lightPosition := mgl32.Vec3{0, 1, 2}
-
-		walkClip := anim.Clip{Keyframes: []anim.Keyframe{keyframe00, keyframe01, keyframe02, keyframe03, keyframe04}}
-		walkClip.SetDuration()
-		runClip := anim.Clip{Keyframes: []anim.Keyframe{keyframe10, keyframe11, keyframe12, keyframe13, keyframe14}}
-		runClip.SetDuration()
-		playerEntity.Animator = &anim.Animator{CurrentClip: &walkClip, UpcomingClip: &runClip, CurrentKeyframe: anim.Keyframe{Transforms: make([]anim.Transform, len(keyframe00.Transforms))}, UpcomingKeyframe: anim.Keyframe{Transforms: make([]anim.Transform, len(keyframe00.Transforms))}, ResultKeyframe: anim.Keyframe{Transforms: make([]anim.Transform, len(keyframe00.Transforms))}}
 		frameTimer := frameTimer{gameLoopStart: float32(glfw.GetTime()), desiredFrameTime: 1 / float32(fps)}
-		var t float32 = 0
+		t := float32(0)
 
 		for !window.ShouldClose() {
 			//Update the time manager
@@ -113,23 +114,17 @@ func main() {
 			//update variables
 			modelRotationMatrix := toComMatrix.Mul4(mgl32.HomogRotate3D(player.TiltAngle, player.TiltAxis).Mul4(mgl32.HomogRotate3DY(player.Angle).Mul4(toComInvMatrix)))
 			modelMatrix := mgl32.Translate3D(player.Position[0], player.Position[1], player.Position[2]).Mul4(modelRotationMatrix)
-
-			if err := playerEntity.Animator.BlendClips(frameTimer.frameStart, t); err != nil {
-				panic(err)
-			}
-			if err = playerEntity.Skeleton.ApplyKeyframe(&playerEntity.Animator.ResultKeyframe); err != nil {
-				panic(err)
-			}
+			model.Animator.Update(frameTimer.deltaTime)
 
 			//Upload unifrom variables
 			gl.UniformMatrix4fv(vpUniform, 1, false, &camera.VPMatrix[0])
 			gl.UniformMatrix4fv(modelUniform, 1, false, &modelMatrix[0])
 			gl.UniformMatrix4fv(modelRotationUniform, 1, false, &modelRotationMatrix[0])
 			gl.Uniform3f(lightPosUniform, lightPosition[0], lightPosition[1], lightPosition[2])
-			gl.UniformMatrix4fv(boneUniforms, 15, false, &playerEntity.Skeleton.GlobalPoseMatrices[0][0])
+			gl.UniformMatrix4fv(boneUniforms, 15, false, &model.Animator.GlobalPoseMatrices[0][0])
 
 			//FPS display, and debug information
-			if frameTimer.isSecondMark{
+			if frameTimer.isSecondMark {
 				fmt.Println("fps:", frameTimer.currentFps)
 				fmt.Printf("time: %v;\nt: %v\n", frameTimer.frameStart, t)
 				fmt.Printf("speed: %v;\nAcceleration: %v;\n\n", player.Velocity.Len(), player.AccDirection.Len())
@@ -138,13 +133,13 @@ func main() {
 			//Perform rendering
 			gl.UseProgram(playerShader)
 			gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
-			playerEntity.Mesh.Draw(playerShader)
+			model.Mesh.Draw(playerShader)
 			window.SwapBuffers()
 		}
 	}(window)
 }
 
-func cap(a float32, i *float32, b float32) {
+func clamp(a float32, i *float32, b float32) {
 	if *i < a {
 		*i = a
 	} else if *i > b {
@@ -157,13 +152,11 @@ func handleInput(window *glfw.Window, world *gizmo, frameTimer *frameTimer, play
 	deltaTime := frameTimer.deltaTime
 	var lightSpeed float32 = 5 * deltaTime
 	var maxTiltAngle float32 = 0.25
-	//var tickSpeed float32 = 200
 	var maxSpeed float32 = 10
 	var jumpVerticalSpeed float32 = 5
 	var angularVelocity float32 = 15
 	var acc float32 = 30
 	var deacc float32 = 15
-
 
 	//Pressing Esc to exit
 	if window.GetKey(glfw.KeyEscape) == glfw.Press ||
@@ -198,7 +191,7 @@ func handleInput(window *glfw.Window, world *gizmo, frameTimer *frameTimer, play
 			if temp := player.Up.Normalize().Add(player.AccDirection.Mul(3 * deltaTime)); math.Acos(float64(temp.Normalize().Dot(world.yAxis))) < float64(maxTiltAngle) {
 				player.Up = temp.Mul(1 / player.Up[1])
 			}
-			player.Velocity = player.Velocity.Add(player.AccDirection.Mul(acc *  deltaTime))
+			player.Velocity = player.Velocity.Add(player.AccDirection.Mul(acc * deltaTime))
 			player.Dir = player.Dir.Add(player.AccDirection.Mul(deltaTime * acc * 2))
 		} else if speed := player.Velocity.Len(); speed >= deltaTime*deacc {
 			player.Velocity = player.Velocity.Sub(player.Velocity.Mul((1 / speed) * deltaTime * deacc))
@@ -225,7 +218,7 @@ func handleInput(window *glfw.Window, world *gizmo, frameTimer *frameTimer, play
 	}
 	//ANIMATION BLENDING
 	*t = player.Velocity.Len() / maxSpeed
-	cap(0, t, 1)
+	clamp(0, t, 1)
 	//tickSpeed += *t * 150
 
 	//Determine the player's tilt
@@ -294,13 +287,12 @@ func handleInput(window *glfw.Window, world *gizmo, frameTimer *frameTimer, play
 		player.Up = mgl32.Vec3{0, 1, 0}
 		player.TiltAngle = 0
 		/*
-		tempShader, err := shader.NewProgram("skeleton_diffuse_alfa")
-		if err != nil {
-			fmt.Println(err)
-		}else{
-			*playerShader = tempShader
-		}
+			tempShader, err := shader.NewProgram("skeleton_diffuse_alfa")
+			if err != nil {
+				fmt.Println(err)
+			}else{
+				*playerShader = tempShader
+			}
 		*/
 	}
 }
-
