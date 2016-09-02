@@ -70,26 +70,36 @@ func splitAndRemoveEmpty(str string) []string {
 	return result
 }
 
-
-func ParseMeshSkeleton(fileName string) (*types.Mesh, *anim.Skeleton, error) {
+func ParseMeshSkeleton(fileName string) (*types.Mesh, *anim.Skeleton, error, error) {
 	collada, err := Parse(fileName)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, err, err
 	}
 	if collada.LibraryGeometries == nil {
-		return nil, nil, fmt.Errorf("collada to mesh: no geometry data found in %v\n", fileName)
+		return nil, nil, fmt.Errorf("collada to mesh: no geometry data found in %v\n", fileName), nil
 	}
 	meshCollada := &collada.LibraryGeometries.Geometries[0].Meshes[0]
-	controllerCollada := &collada.LibraryControllers.Controllers[0]
+	var controllerCollada *controller
+	if collada.LibraryControllers != nil {
+		if len(collada.LibraryControllers.Controllers) > 0 {
+			controllerCollada = &collada.LibraryControllers.Controllers[0]
+		}
+	}
 	mesh, err := extractMesh(meshCollada, controllerCollada)
 	if err != nil {
-		return nil, nil, fmt.Errorf("collada mode: error extracting mesh : %v", err)
+		return nil, nil, fmt.Errorf("collada: error extracting mesh : %v", err), nil
 	}
-	skeleton, err := extractSkeleton(&controllerCollada.Skin, collada.LibraryVisualScenes)
-	if err != nil {
-		return nil, nil, fmt.Errorf("collada mode: error extracting skeleton: %v", err)
+	var skeleton *anim.Skeleton
+	if controllerCollada != nil {
+		skeleton, err = extractSkeleton(&controllerCollada.Skin, collada.LibraryVisualScenes)
+		if err != nil {
+			return mesh, nil, nil, fmt.Errorf("collada: error extracting skeleton: %v", err)
+		}
+	} else {
+		return mesh, nil, nil, fmt.Errorf("collada: no skin data found in: %v", fileName)
 	}
-	return mesh, skeleton, nil
+
+	return mesh, skeleton, nil, nil
 }
 
 func extractMesh(meshCollada *mesh, controllerCollada *controller) (*types.Mesh, error) {

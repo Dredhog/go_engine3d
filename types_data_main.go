@@ -241,16 +241,16 @@ var keyframe14 = anim.Keyframe{SampleTime: 0.6, Transforms: []anim.Transform{
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{20, 0, 0}},
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{-90, 0, 0}},
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}}}}
-var keyframe20 = anim.Keyframe{SampleTime: 0, Transforms: []anim.Transform{
+var keyframe20 = anim.Keyframe{SampleTime: -1, Transforms: []anim.Transform{
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
-	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, -50, 0}},
-	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
-	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
+	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, -60, 0}},
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
-	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, -40, 0}},
+	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
+	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
+	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, -45, 0}},
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
@@ -259,14 +259,14 @@ var keyframe20 = anim.Keyframe{SampleTime: 0, Transforms: []anim.Transform{
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}}}}
 var keyframe21 = anim.Keyframe{SampleTime: 1, Transforms: []anim.Transform{
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
-	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 50, 0}},
+	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 60, 0}},
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
-	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 40, 0}},
+	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 45, 0}},
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},

@@ -23,7 +23,7 @@ func NewAnimator(skeleton *Skeleton, animations []Animation) (*Animator, error) 
 		a.animationStates[i].playbackRate = 1
 	}
 	a.animationStates[2].loop = false
-	a.workingPoses = make([]Keyframe, 4)
+	a.workingPoses = make([]Keyframe, 3)
 	for i := range a.workingPoses {
 		a.workingPoses[i].Transforms = make([]Transform, boneCount)
 	}
@@ -60,16 +60,16 @@ func (a *Animator) calcGlobalPoseMatrix(boneIndex int) mgl32.Mat4 {
 
 func (a *Animator) Update(deltaTime float32, s, h float32) {
 	a.globalTime += deltaTime
-	a.SampleMoment(0, 0)
-	a.SampleMoment(1, 1)
-	a.SampleLinear(2, 2, h)
-	a.LinearBlend(0, 1, s, 3)
-	a.AdditiveBlend(3, 2, 1.0, 0)
+	a.SampleAtGlobalTime(0, 0)
+	a.SampleAtGlobalTime(1, 1)
+	a.LinearBlend(0, 1, s, 0)
+	a.SampleLinear(2, h, 1)
+	a.AdditiveBlend(0, 1, 1.0, 0)
 	a.localPose = a.workingPoses[0]
 	a.CalcGlobalPoseMatrices()
 }
 
-func (a *Animator) SampleLinear(sampleIndex, resultIndex int, t float32) {
+func (a *Animator) SampleLinear(sampleIndex int, t float32, resultIndex int) {
 	a.animations[sampleIndex].linearSample(t, &a.workingPoses[resultIndex])
 }
 
@@ -84,7 +84,7 @@ func (a *Animator) AdditiveBlend(baseIndex, additiveIndex int, t float32, result
 }
 
 
-func (a *Animator) SampleMoment(sampleIndex, resultIndex int) {
+func (a *Animator) SampleAtGlobalTime(sampleIndex, resultIndex int) {
 	state := &a.animationStates[sampleIndex]
 	animation := &a.animations[sampleIndex]
 	t := state.playbackRate * (a.globalTime - state.startTime)
