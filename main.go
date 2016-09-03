@@ -63,7 +63,7 @@ func main() {
 		window.SetInputMode(glfw.CursorMode, glfw.CursorDisabled)
 
 		//LoadPlayer
-		mesh, skeleton, err0, err1 := collada.ParseMeshSkeleton("data/model/turner.dae")
+		mesh, skeleton, err0, err1 := collada.ParseMeshSkeleton("data/model/turner1.dae")
 		if err0 != nil {
 			log.Fatalln(err0)
 		} else if err1 != nil {
@@ -86,11 +86,7 @@ func main() {
 		if err != nil {
 			log.Fatalln(err)
 		}
-		playerSpecularTexture, err := texture.NewTexture("pink.png")
-		if err != nil {
-			log.Fatalln(err)
-		}
-		model.Mesh.Textures = []types.Texture{{playerSpecularTexture, "specular"}, {playerDiffuseTexture, "diffuse"}}
+		model.Mesh.Textures = []types.Texture{{playerDiffuseTexture, "diffuse"}}
 
 		//Load Light
 		light, _, err0, _ := collada.ParseMeshSkeleton("data/model/light.dae")

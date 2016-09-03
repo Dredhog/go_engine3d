@@ -11,11 +11,13 @@ layout (location = 5) in vec3 weights;
 
 out vec3 Position;
 out vec3 Normal;
+out vec3 Color;
 out vec2 TexCoord;
 
 void main(){
 	Position = position;
 	Normal = normal;
+	Color = color;
 	TexCoord = texCoord;
 	gl_Position = vp_mat * vec4(position, 1);
 }
