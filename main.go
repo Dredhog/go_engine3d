@@ -111,6 +111,10 @@ func main() {
 		if err != nil {
 			log.Fatalln(err)
 		}
+		shaderDiffuseTextureWaving, err := shader.NewProgram("diffuse_texture_waving")
+		if err != nil {
+			log.Fatalln(err)
+		}
 		squareTexture, err := texture.NewTexture("squares.png")
 		if err != nil {
 			log.Fatalln(err)
@@ -136,7 +140,7 @@ func main() {
 
 			//Get input
 			glfw.PollEvents()
-			handleInput(window, &worldGizmo, &frameTimer, &player, &camera, &lightPosition, &speed, &head, &height, &environmentShader, shaderDiffuseTexture, shaderPointLitTexture)
+			handleInput(window, &worldGizmo, &frameTimer, &player, &camera, &lightPosition, &speed, &head, &height, &environmentShader, shaderDiffuseTexture, shaderPointLitTexture, shaderDiffuseTextureWaving)
 
 			//update variables
 			camera.Update(window.GetCursorPos())
@@ -174,6 +178,7 @@ func main() {
 			gl.UseProgram(environmentShader)
 			gl.UniformMatrix4fv(gl.GetUniformLocation(environmentShader, gl.Str("vp_mat\x00")), 1, false, &camera.VPMatrix[0])
 			gl.Uniform3f(gl.GetUniformLocation(environmentShader, gl.Str("light_position\x00")), lightPosition[0], lightPosition[1], lightPosition[2])
+			gl.Uniform1f(gl.GetUniformLocation(environmentShader, gl.Str("time\x00")), frameTimer.frameStart)
 			level.Draw(environmentShader)
 
 			//Update the player shader
@@ -213,7 +218,7 @@ func max(a, b float32) float32 {
 }
 
 //Input function
-func handleInput(window *glfw.Window, world *gizmo, frameTimer *frameTimer, player *player, camera *camera, lightPosition *mgl32.Vec3, speed, head, height *float32, envShader *uint32, firstShader, secondShader uint32) {
+func handleInput(window *glfw.Window, world *gizmo, frameTimer *frameTimer, player *player, camera *camera, lightPosition *mgl32.Vec3, speed, head, height *float32, envShader *uint32, firstShader, secondShader, thirdShader uint32) {
 	var maxTiltAngle float32 = 0.25
 	var lightSpeed float32 = 10
 	var maxSpeed float32 = 10
@@ -233,7 +238,7 @@ func handleInput(window *glfw.Window, world *gizmo, frameTimer *frameTimer, play
 		*envShader = secondShader
 	}
 	if window.GetKey(glfw.Key3) == glfw.Press {
-		*envShader = secondShader
+		*envShader = thirdShader
 	}
 	if window.GetKey(glfw.KeyLeftShift) == glfw.Press {
 		frameTimer.deltaTime /= 8
