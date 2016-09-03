@@ -349,14 +349,14 @@ func handleInput(window *glfw.Window, world *gizmo, frameTimer *frameTimer, play
 		t *= -1
 	}
 	*head += 4 * (t - (*head)) * deltaTime
-	*speed = player.Velocity.Len() / maxSpeed
+	*speed =  float32(math.Sqrt(float64((player.Velocity[0]*player.Velocity[0])+(player.Velocity[2]*player.Velocity[2]))))/maxSpeed
 	*head = clamp(-1, *head, 1)
 	*speed = clamp(0, *speed, 1)
 	//jump blend
 	maxFallTime := initialJumpSpeed/9.81
 	maxHeight := maxFallTime*maxFallTime*9.81/2
 	if player.Velocity[1] > 0{
-		*height = clamp(0, 2*player.Position[1]/maxHeight, 1)
+		*height = clamp(0.2, 2*player.Position[1]/maxHeight, 1)
 	} else {
 		*height = player.Position[1]/maxHeight
 	}
