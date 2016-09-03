@@ -16,23 +16,25 @@ func NewProgram(fileName string) (uint32, error) {
 	}
 
 	//Read vertex shader
-	vertexSourceBytes, err := ioutil.ReadFile(workingDirectory + "/shaders/" + fileName + ".vert")
+	absolutePath := workingDirectory + "/shaders/" + fileName + ".vert"
+	vertexSourceBytes, err := ioutil.ReadFile(absolutePath)
 	if err != nil {
 		return 0, fmt.Errorf("shader: vertex file read error: %v", err)
 	}
 	vertexShader, err := compileShader(string(vertexSourceBytes)+"\x00", gl.VERTEX_SHADER)
 	if err != nil {
-		return 0, fmt.Errorf("shader: vertex compilation error: %v", err)
+		return 0, fmt.Errorf("shader: file %v vertex shader compilation error:\n%v", absolutePath, err)
 	}
 
 	//Read fragment shader
-	fragmentSourceBytes, err := ioutil.ReadFile(workingDirectory + "/shaders/" + fileName + ".frag")
+	absolutePath = workingDirectory + "/shaders/" + fileName + ".frag"
+	fragmentSourceBytes, err := ioutil.ReadFile(absolutePath)
 	if err != nil {
 		return 0, fmt.Errorf("shader: fragment file read error: %v", err)
 	}
 	fragmentShader, err := compileShader(string(fragmentSourceBytes)+"\x00", gl.FRAGMENT_SHADER)
 	if err != nil {
-		return 0, fmt.Errorf("shader: fragment compilation error: %v", err)
+		return 0, fmt.Errorf("shader: file %v fragment shader compilation error:\n%v", absolutePath, err)
 	}
 
 	program := gl.CreateProgram()

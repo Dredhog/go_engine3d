@@ -103,21 +103,19 @@ func main() {
 		if err0 != nil {
 			log.Fatalln(err0)
 		}
-		environmentShader, err := shader.NewProgram("environment")
+		shaderDiffuseTexture, err := shader.NewProgram("diffuse_texture")
 		if err != nil {
 			log.Fatalln(err)
 		}
-		levelDiffuseTexture, err := texture.NewTexture("squares.png")
+		shaderPointLitTexture, err := shader.NewProgram("diffuse_texture_point_lit")
 		if err != nil {
 			log.Fatalln(err)
 		}
-		level.Textures = []types.Texture{{levelDiffuseTexture, "diffuse"}}
-		//Get uniforms from shader
-		vpUniform := gl.GetUniformLocation(playerShader, gl.Str("vp_mat\x00"))
-		modelUniform := gl.GetUniformLocation(playerShader, gl.Str("model_mat\x00"))
-		modelRotationUniform := gl.GetUniformLocation(playerShader, gl.Str("model_rotation_mat\x00"))
-		lightPosUniform := gl.GetUniformLocation(playerShader, gl.Str("light_position\x00"))
-		boneUniforms := gl.GetUniformLocation(playerShader, gl.Str("bone_mat\x00"))
+		squareTexture, err := texture.NewTexture("squares.png")
+		if err != nil {
+			log.Fatalln(err)
+		}
+		level.Textures = []types.Texture{{squareTexture, "diffuse"}}
 
 		//Decalring gameplay/animation/framerate variables
 		toComMatrix := mgl32.Translate3D(0, 0.7, 0)
@@ -130,6 +128,7 @@ func main() {
 		speed := float32(0)
 		head := float32(0.5)
 		height := float32(0)
+		environmentShader := shaderDiffuseTexture
 
 		for !window.ShouldClose() {
 			//Update the time manager
@@ -137,7 +136,7 @@ func main() {
 
 			//Get input
 			glfw.PollEvents()
-			handleInput(window, &worldGizmo, &frameTimer, &player, &camera, &lightPosition, &speed, &head, &height)
+			handleInput(window, &worldGizmo, &frameTimer, &player, &camera, &lightPosition, &speed, &head, &height, &environmentShader, shaderDiffuseTexture, shaderPointLitTexture)
 
 			//update variables
 			camera.Update(window.GetCursorPos())
@@ -179,11 +178,11 @@ func main() {
 
 			//Update the player shader
 			gl.UseProgram(playerShader)
-			gl.UniformMatrix4fv(vpUniform, 1, false, &camera.VPMatrix[0])
-			gl.UniformMatrix4fv(modelUniform, 1, false, &modelMatrix[0])
-			gl.UniformMatrix4fv(modelRotationUniform, 1, false, &modelRotationMatrix[0])
-			gl.Uniform3f(lightPosUniform, lightPosition[0], lightPosition[1], lightPosition[2])
-			gl.UniformMatrix4fv(boneUniforms, 15, false, &model.Animator.GlobalPoseMatrices[0][0])
+			gl.UniformMatrix4fv(gl.GetUniformLocation(playerShader, gl.Str("vp_mat\x00")), 1, false, &camera.VPMatrix[0])
+			gl.UniformMatrix4fv(gl.GetUniformLocation(playerShader, gl.Str("model_mat\x00")), 1, false, &modelMatrix[0])
+			gl.UniformMatrix4fv(gl.GetUniformLocation(playerShader, gl.Str("model_rotation_mat\x00")), 1, false, &modelRotationMatrix[0])
+			gl.Uniform3f(gl.GetUniformLocation(playerShader, gl.Str("light_position\x00")), lightPosition[0], lightPosition[1], lightPosition[2])
+			gl.UniformMatrix4fv(gl.GetUniformLocation(playerShader, gl.Str("bone_mat\x00")), 15, false, &model.Animator.GlobalPoseMatrices[0][0])
 			model.Mesh.Draw(playerShader)
 			window.SwapBuffers()
 		}
@@ -214,7 +213,7 @@ func max(a, b float32) float32 {
 }
 
 //Input function
-func handleInput(window *glfw.Window, world *gizmo, frameTimer *frameTimer, player *player, camera *camera, lightPosition *mgl32.Vec3, speed, head, height *float32) {
+func handleInput(window *glfw.Window, world *gizmo, frameTimer *frameTimer, player *player, camera *camera, lightPosition *mgl32.Vec3, speed, head, height *float32, envShader *uint32, firstShader, secondShader uint32) {
 	var maxTiltAngle float32 = 0.25
 	var lightSpeed float32 = 10
 	var maxSpeed float32 = 10
@@ -224,9 +223,17 @@ func handleInput(window *glfw.Window, world *gizmo, frameTimer *frameTimer, play
 	var deacc float32 = 15
 
 	//Pressing Esc to exit
-	if window.GetKey(glfw.KeyEscape) == glfw.Press ||
-		window.GetKey(glfw.KeyEnter) == glfw.Press {
+	if window.GetKey(glfw.KeyEscape) == glfw.Press {
 		window.SetShouldClose(true)
+	}
+	if window.GetKey(glfw.Key1) == glfw.Press {
+		*envShader = firstShader
+	}
+	if window.GetKey(glfw.Key2) == glfw.Press {
+		*envShader = secondShader
+	}
+	if window.GetKey(glfw.Key3) == glfw.Press {
+		*envShader = secondShader
 	}
 	if window.GetKey(glfw.KeyLeftShift) == glfw.Press {
 		frameTimer.deltaTime /= 8

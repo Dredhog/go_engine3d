@@ -4,7 +4,6 @@ import (
 	"time"
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/go-gl/glfw/v3.2/glfw"
-	"math"
 
 	"training/engine/anim"
 )
@@ -59,7 +58,7 @@ func newCamera(offset mgl32.Vec3, target *mgl32.Vec3, world *gizmo) camera {
 	cam.Left = world.yAxis.Cross(cam.Offset.Mul(-1)).Normalize()
 	cam.Forward = cam.Left.Cross(world.yAxis).Normalize()
 	cam.ViewMatrix = mgl32.LookAtV(cam.Target.Add(cam.Offset), *cam.Target, world.yAxis)
-	cam.ProjectionMatrix = mgl32.Perspective(math.Pi/4, 1.6, 0.1, 1000)
+	cam.ProjectionMatrix = mgl32.Perspective(3.14159/4, 1.6, 0.1, 1000)
 	cam.VPMatrix = cam.ProjectionMatrix.Mul4(cam.ViewMatrix)
 	return cam
 }
@@ -359,10 +358,10 @@ var keyframe40 = anim.Keyframe{SampleTime: 0, Transforms: []anim.Transform{
 var keyframe41 = anim.Keyframe{SampleTime: 1, Transforms: []anim.Transform{
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
+	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 20}},
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
-	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
-	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
+	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, -20}},
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
