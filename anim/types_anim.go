@@ -21,7 +21,7 @@ type Animator struct {
 	animationStates    []animationState
 	GlobalPoseMatrices []mgl32.Mat4
 	localPoseMatrices  []mgl32.Mat4
-	workingPoses	   []Keyframe
+	workingPoses       []Keyframe
 	localPose          Keyframe
 	globalPosesSet     []bool
 	globalTime         float32

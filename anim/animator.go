@@ -69,7 +69,7 @@ func (a *Animator) SampleLinear(sampleIndex int, t float32, resultIndex int) {
 	a.animations[sampleIndex].linearSample(t, &a.workingPoses[resultIndex])
 }
 
-func (a *Animator) LinearBlend(firstIndex, secondIndex int, t float32, resultIndex int){
+func (a *Animator) LinearBlend(firstIndex, secondIndex int, t float32, resultIndex int) {
 	lerpKeyframe(&a.workingPoses[firstIndex], &a.workingPoses[secondIndex], t, &a.workingPoses[resultIndex])
 }
 
@@ -78,7 +78,6 @@ func (a *Animator) AdditiveBlend(baseIndex, additiveIndex int, t float32, result
 		addTransforms(&a.workingPoses[baseIndex].Transforms[i], &a.workingPoses[additiveIndex].Transforms[i], t, &a.workingPoses[resultIndex].Transforms[i])
 	}
 }
-
 
 func (a *Animator) SampleAtGlobalTime(sampleIndex, resultIndex int) {
 	state := &a.animationStates[sampleIndex]

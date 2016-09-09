@@ -39,7 +39,7 @@ func main() {
 	glfw.WindowHint(glfw.ContextVersionMinor, 3)
 	glfw.WindowHint(glfw.OpenGLProfile, glfw.OpenGLCoreProfile)
 	glfw.WindowHint(glfw.OpenGLForwardCompatible, glfw.True)
-	window, err := glfw.CreateWindow(screenWidth, screenHeight, "Opengl", nil, nil)
+	window, err := glfw.CreateWindow(screenWidth, screenHeight, "Opengl", glfw.GetPrimaryMonitor(), nil)
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -140,24 +140,24 @@ func main() {
 
 			//Get input
 			glfw.PollEvents()
-			handleInput(window, &worldGizmo, &frameTimer, &player, &camera, &lightPosition, &speed, &head, &height, &environmentShader, shaderDiffuseTexture, shaderPointLitTexture, shaderDiffuseTextureWaving)
+			handleInput(window, &worldGizmo, &frameTimer, &player, &camera, &lightPosition, &speed, &head, &height, &environmentShader, &shaderDiffuseTexture, &shaderPointLitTexture, &shaderDiffuseTextureWaving)
 
 			//update variables
 			camera.Update(window.GetCursorPos())
 			modelRotationMatrix := toComMatrix.Mul4(mgl32.HomogRotate3D(player.TiltAngle, player.TiltAxis).Mul4(mgl32.HomogRotate3DY(player.Angle).Mul4(toComInvMatrix)))
 			modelMatrix := mgl32.Translate3D(player.Position[0], player.Position[1], player.Position[2]).Mul4(modelRotationMatrix)
-			model.Animator.Update(frameTimer.deltaTime,	func (){
-										a := model.Animator
-										a.SampleAtGlobalTime(0, 0)	//Sample Walk
-										a.SampleAtGlobalTime(1, 1)	//Sample Run
-										a.LinearBlend(0, 1, speed, 1)	//LERP(Walk, Run) => move
-										a.SampleAtGlobalTime(3, 0)	//Sample Idle
-										a.LinearBlend(0, 1, speed, 0)	//LERP(move, Idle) => ground
-										a.SampleLinear(4, height, 1)	//Sample Jump
-										a.LinearBlend(0, 1, height, 0)	//LERP(ground, Jump) => body
-										a.SampleLinear(2, head, 1)	//Sample head Turn
-										a.AdditiveBlend(0, 1, 1.0, 0)	//AdditiveBlend(body, head) => final
-									})
+			model.Animator.Update(frameTimer.deltaTime, func() {
+				a := model.Animator
+				a.SampleAtGlobalTime(0, 0)     //Sample Walk
+				a.SampleAtGlobalTime(1, 1)     //Sample Run
+				a.LinearBlend(0, 1, speed, 1)  //LERP(Walk, Run) => move
+				a.SampleAtGlobalTime(3, 0)     //Sample Idle
+				a.LinearBlend(0, 1, speed, 0)  //LERP(move, Idle) => ground
+				a.SampleLinear(4, height, 1)   //Sample Jump
+				a.LinearBlend(0, 1, height, 0) //LERP(ground, Jump) => body
+				a.SampleLinear(2, head, 1)     //Sample head Turn
+				a.AdditiveBlend(0, 1, 1.0, 0)  //AdditiveBlend(body, head) => final
+			})
 
 			//FPS display, and debug information
 			if frameTimer.isSecondMark {
@@ -194,7 +194,7 @@ func main() {
 	}(window)
 }
 
-func clamp(a float32, i float32, b float32) float32{
+func clamp(a float32, i float32, b float32) float32 {
 	if i < a {
 		return a
 	} else if i > b {
@@ -203,7 +203,7 @@ func clamp(a float32, i float32, b float32) float32{
 	return i
 }
 
-func abs(a float32) float32{
+func abs(a float32) float32 {
 	if a < 0 {
 		return -a
 	}
@@ -218,7 +218,7 @@ func max(a, b float32) float32 {
 }
 
 //Input function
-func handleInput(window *glfw.Window, world *gizmo, frameTimer *frameTimer, player *player, camera *camera, lightPosition *mgl32.Vec3, speed, head, height *float32, envShader *uint32, firstShader, secondShader, thirdShader uint32) {
+func handleInput(window *glfw.Window, world *gizmo, frameTimer *frameTimer, player *player, camera *camera, lightPosition *mgl32.Vec3, speed, head, height *float32, envShader, firstShader, secondShader, thirdShader *uint32) {
 	var maxTiltAngle float32 = 0.25
 	var lightSpeed float32 = 10
 	var maxSpeed float32 = 10
@@ -232,13 +232,13 @@ func handleInput(window *glfw.Window, world *gizmo, frameTimer *frameTimer, play
 		window.SetShouldClose(true)
 	}
 	if window.GetKey(glfw.Key1) == glfw.Press {
-		*envShader = firstShader
+		*envShader = *firstShader
 	}
 	if window.GetKey(glfw.Key2) == glfw.Press {
-		*envShader = secondShader
+		*envShader = *secondShader
 	}
 	if window.GetKey(glfw.Key3) == glfw.Press {
-		*envShader = thirdShader
+		*envShader = *thirdShader
 	}
 	if window.GetKey(glfw.KeyLeftShift) == glfw.Press {
 		frameTimer.deltaTime /= 8
@@ -361,16 +361,16 @@ func handleInput(window *glfw.Window, world *gizmo, frameTimer *frameTimer, play
 		t *= -1
 	}
 	*head += 4 * (t - (*head)) * deltaTime
-	*speed =  float32(math.Sqrt(float64((player.Velocity[0]*player.Velocity[0])+(player.Velocity[2]*player.Velocity[2]))))/maxSpeed
+	*speed = float32(math.Sqrt(float64((player.Velocity[0]*player.Velocity[0])+(player.Velocity[2]*player.Velocity[2])))) / maxSpeed
 	*head = clamp(-1, *head, 1)
 	*speed = clamp(0, *speed, 1)
 	//jump blend
-	maxFallTime := initialJumpSpeed/9.81
-	maxHeight := maxFallTime*maxFallTime*9.81/2
-	if player.Velocity[1] > 0{
+	maxFallTime := initialJumpSpeed / 9.81
+	maxHeight := maxFallTime * maxFallTime * 9.81 / 2
+	if player.Velocity[1] > 0 {
 		*height = clamp(0.2, 2*player.Position[1]/maxHeight, 1)
 	} else {
-		*height = player.Position[1]/maxHeight
+		*height = player.Position[1] / maxHeight
 	}
 	//RESET BUTTON
 	if window.GetKey(glfw.KeyR) == glfw.Press {
@@ -383,4 +383,3 @@ func handleInput(window *glfw.Window, world *gizmo, frameTimer *frameTimer, play
 		*head = 0
 	}
 }
-
