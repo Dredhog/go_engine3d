@@ -3,7 +3,7 @@ package types
 import "training/engine/anim"
 
 type Texture struct {
-	Id      uint32
+	Id   uint32
 	Type string
 }
 

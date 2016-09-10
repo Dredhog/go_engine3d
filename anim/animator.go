@@ -22,7 +22,6 @@ func NewAnimator(skeleton *Skeleton, animations []Animation) (*Animator, error) 
 		a.animationStates[i].loop = true
 		a.animationStates[i].playbackRate = 1
 	}
-	a.animationStates[2].loop = false
 	a.workingPoses = make([]Keyframe, 2)
 	for i := range a.workingPoses {
 		a.workingPoses[i].Transforms = make([]Transform, boneCount)
@@ -89,4 +88,12 @@ func (a *Animator) SampleAtGlobalTime(sampleIndex, resultIndex int) {
 		t = animation.Duration
 	}
 	animation.linearSample(t, &a.workingPoses[resultIndex])
+}
+
+func (a *Animator) SetPlaybackRate(index int, rate float32) {
+	a.animationStates[index].playbackRate = rate
+}
+
+func (a *Animator) SetLooping(index int, loop bool) {
+	a.animationStates[index].loop = loop
 }

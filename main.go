@@ -24,7 +24,7 @@ func init() {
 const (
 	screenWidth  = 1920
 	screenHeight = 1080
-	fps          = 122
+	fps          = 200
 )
 
 func main() {
@@ -62,7 +62,7 @@ func main() {
 		gl.ClearColor(0.2, 0.3, 0.5, 1.0)
 		window.SetInputMode(glfw.CursorMode, glfw.CursorDisabled)
 
-		//LoadPlayer
+		//Load player data
 		mesh, skeleton, err0, err1 := collada.ParseMeshSkeleton("data/model/turner1.dae")
 		if err0 != nil {
 			log.Fatalln(err0)
@@ -75,6 +75,9 @@ func main() {
 			anim.Animation{Duration: keyframe21.SampleTime, Keyframes: []anim.Keyframe{keyframe20, keyframe21}},
 			anim.Animation{Duration: keyframe32.SampleTime, Keyframes: []anim.Keyframe{keyframe30, keyframe31, keyframe32}},
 			anim.Animation{Duration: keyframe41.SampleTime, Keyframes: []anim.Keyframe{keyframe40, keyframe41}}})
+		model.Animator.SetPlaybackRate(0, 1.3)
+		model.Animator.SetPlaybackRate(1, 1.3)
+		model.Animator.SetLooping(2, false)
 		if err != nil {
 			panic(err)
 		}
@@ -88,7 +91,7 @@ func main() {
 		}
 		model.Mesh.Textures = []types.Texture{{playerDiffuseTexture, "diffuse"}}
 
-		//Load Light
+		//Load light data
 		light, _, err0, _ := collada.ParseMeshSkeleton("data/model/light.dae")
 		if err != nil {
 			log.Fatalln(err0)
@@ -98,7 +101,7 @@ func main() {
 			log.Fatalln(err)
 		}
 
-		//Load Level
+		//Load level data
 		level, _, err0, _ := collada.ParseMeshSkeleton("data/model/dust2x2.dae")
 		if err0 != nil {
 			log.Fatalln(err0)
@@ -140,10 +143,11 @@ func main() {
 
 			//Get input
 			glfw.PollEvents()
-			handleInput(window, &worldGizmo, &frameTimer, &player, &camera, &lightPosition, &speed, &head, &height, &environmentShader, &shaderDiffuseTexture, &shaderPointLitTexture, &shaderDiffuseTextureWaving)
+			handleInput(window, &worldGizmo, &frameTimer, &player, &camera, &lightPosition, &speed, &head, &height, &environmentShader, shaderDiffuseTexture, shaderPointLitTexture, shaderDiffuseTextureWaving)
 
 			//update variables
-			camera.Update(window.GetCursorPos())
+			x, y := window.GetCursorPos()
+			camera.Update(x, y, speed, &player.Dir)
 			modelRotationMatrix := toComMatrix.Mul4(mgl32.HomogRotate3D(player.TiltAngle, player.TiltAxis).Mul4(mgl32.HomogRotate3DY(player.Angle).Mul4(toComInvMatrix)))
 			modelMatrix := mgl32.Translate3D(player.Position[0], player.Position[1], player.Position[2]).Mul4(modelRotationMatrix)
 			model.Animator.Update(frameTimer.deltaTime, func() {
@@ -218,7 +222,7 @@ func max(a, b float32) float32 {
 }
 
 //Input function
-func handleInput(window *glfw.Window, world *gizmo, frameTimer *frameTimer, player *player, camera *camera, lightPosition *mgl32.Vec3, speed, head, height *float32, envShader, firstShader, secondShader, thirdShader *uint32) {
+func handleInput(window *glfw.Window, world *gizmo, frameTimer *frameTimer, player *player, camera *camera, lightPosition *mgl32.Vec3, speed, head, height *float32, envShader *uint32, firstShader, secondShader, thirdShader uint32) {
 	var maxTiltAngle float32 = 0.25
 	var lightSpeed float32 = 10
 	var maxSpeed float32 = 10
@@ -232,13 +236,13 @@ func handleInput(window *glfw.Window, world *gizmo, frameTimer *frameTimer, play
 		window.SetShouldClose(true)
 	}
 	if window.GetKey(glfw.Key1) == glfw.Press {
-		*envShader = *firstShader
+		*envShader = firstShader
 	}
 	if window.GetKey(glfw.Key2) == glfw.Press {
-		*envShader = *secondShader
+		*envShader = secondShader
 	}
 	if window.GetKey(glfw.Key3) == glfw.Press {
-		*envShader = *thirdShader
+		*envShader = thirdShader
 	}
 	if window.GetKey(glfw.KeyLeftShift) == glfw.Press {
 		frameTimer.deltaTime /= 8
