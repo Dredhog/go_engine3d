@@ -52,6 +52,7 @@ func (m *Mesh) setUpMesh() {
 		gl.EnableVertexAttribArray(5)
 		gl.VertexAttribPointer(5, 3, gl.FLOAT, false, 0, gl.PtrOffset(4*m.Offsets[5]))
 	}
+	fmt.Printf("Mesh Floats: %v;\tbytest: %v\n", len(m.Floats), 4*len(m.Floats))
 
 	//Rebind default array object
 	gl.BindVertexArray(0)

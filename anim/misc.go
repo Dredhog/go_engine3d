@@ -47,5 +47,5 @@ func TransformToMat4(t Transform) mgl32.Mat4 {
 	rotateX := mgl32.HomogRotate3DX(mgl32.DegToRad(t.Rotation[0]))
 	rotateY := mgl32.HomogRotate3DY(mgl32.DegToRad(t.Rotation[1]))
 	rotateZ := mgl32.HomogRotate3DZ(mgl32.DegToRad(t.Rotation[2]))
-	return translate.Mul4(scale.Mul4(rotateZ.Mul4(rotateY.Mul4(rotateX))))
+	return translate.Mul4(rotateZ.Mul4(rotateY.Mul4(rotateX.Mul4(scale))))
 }

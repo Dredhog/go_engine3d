@@ -11,7 +11,7 @@ import (
 	"github.com/go-gl/gl/v3.3-core/gl"
 )
 
-func NewTexture(file string) (uint32, error) {
+func NewTexture(file string, wrapMode int32) (uint32, error) {
 	workingDirectory, err := os.Getwd()
 	if err != nil {
 		return 0, fmt.Errorf("texture: error getting working directory path: %q", err)
@@ -38,10 +38,6 @@ func NewTexture(file string) (uint32, error) {
 	gl.GenTextures(1, &texture)
 	gl.ActiveTexture(gl.TEXTURE0)
 	gl.BindTexture(gl.TEXTURE_2D, texture)
-	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR)
-	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR)
-	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE)
-	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
 	gl.TexImage2D(gl.TEXTURE_2D,
 		0,
 		gl.RGBA,
@@ -51,6 +47,11 @@ func NewTexture(file string) (uint32, error) {
 		gl.RGBA,
 		gl.UNSIGNED_BYTE,
 		gl.Ptr(rgba.Pix))
+	gl.GenerateMipmap(gl.TEXTURE_2D)
+	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR)
+	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR)
+	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, wrapMode)
+	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, wrapMode)
 
 	gl.BindTexture(gl.TEXTURE_2D, 0)
 	return texture, nil
