@@ -58,7 +58,7 @@ func (m *Mesh) setUpMesh() {
 	gl.BindVertexArray(0)
 }
 
-func (m *Mesh) Draw(shader uint32) {
+func (m *Mesh) Draw(shader uint32, drawMode uint32) {
 	diffuseCount := 0
 	specularCount := 0
 	for i := 0; i < len(m.Textures); i++ {
@@ -78,6 +78,6 @@ func (m *Mesh) Draw(shader uint32) {
 	gl.ActiveTexture(gl.TEXTURE0)
 
 	gl.BindVertexArray(m.VAO)
-	gl.DrawElements(gl.TRIANGLES, int32(len(m.Indices)), gl.UNSIGNED_INT, gl.PtrOffset(0))
+	gl.DrawElements(drawMode, int32(len(m.Indices)), gl.UNSIGNED_INT, gl.PtrOffset(0))
 	gl.BindVertexArray(0)
 }

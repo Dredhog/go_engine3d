@@ -26,4 +26,5 @@ void main()
 	float final_light_intensity = max(light_squared_norm * diffuse_alfa, 0.2);
 
 	outColor = final_light_intensity * Color * texture(texture_diffuse0, TexCoord);
+	outColor.a = 1.0;
 }

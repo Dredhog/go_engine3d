@@ -80,7 +80,7 @@ func (c *camera) Update(x, y float64, speedPercent float32, playerDir *mgl32.Vec
 	//Field of view for speed effect
 	towardsSpeed := clamp(0, playerDir.Dot(c.Forward), 1)
 	c.ProjectionMatrix = mgl32.Perspective(3.14159/(4-speedPercent*towardsSpeed*0.4), 1.6, 0.1, 1000)
-	c.ViewMatrix = mgl32.LookAtV(c.Target.Add(c.Position), *c.Target, mgl32.Vec3{0, 1, 0})
+	c.ViewMatrix = mgl32.LookAtV(c.Target.Add(c.Position), c.Target.Add(mgl32.Vec3{0, 1, 0}), mgl32.Vec3{0, 1, 0})
 	c.VPMatrix = c.ProjectionMatrix.Mul4(c.ViewMatrix)
 }
 
@@ -315,8 +315,8 @@ var keyframe31 = anim.Keyframe{SampleTime: 1, Transforms: []anim.Transform{
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 0}},
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, -10}},
-	anim.Transform{[3]float32{2, 1, 2}, [3]float32{}, [3]float32{0, 0, -40}},
-	anim.Transform{[3]float32{0.5, 1, 0.5}, [3]float32{}, [3]float32{10, 0, 0}},
+	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, -40}},
+	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{10, 0, 0}},
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 10}},
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{0, 0, 40}},
 	anim.Transform{[3]float32{1, 1, 1}, [3]float32{}, [3]float32{10, 0, 0}},
