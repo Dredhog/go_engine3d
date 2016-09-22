@@ -11,6 +11,7 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 
 	"training/engine/anim"
+	"training/engine/collision"
 	"training/engine/load/shader"
 	"training/engine/load/texture"
 	"training/engine/parse/collada"
@@ -19,17 +20,6 @@ import (
 
 func init() {
 	runtime.LockOSThread()
-}
-
-var shapeA = []mgl32.Vec3{
-	mgl32.Vec3{0.5,  0.5,  0.5},
-	mgl32.Vec3{0.5,  0.5,  -0.5},
-	mgl32.Vec3{0.5, -0.5,  0.5},
-	mgl32.Vec3{0.5, -0.5, -0.5},
-	mgl32.Vec3{-0.5, -0.5,  0.5},
-	mgl32.Vec3{-0.5, -0.5, -0.5},
-	mgl32.Vec3{-0.5,  0.5,  0.5},
-	mgl32.Vec3{-0.5,  0.5, -0.5},
 }
 
 const (
@@ -105,15 +95,24 @@ func main() {
 		model.Mesh.Textures = []types.Texture{{playerDiffuseTexture, "diffuse"}}
 
 		//Load collidion data
-		collider, _, err0, _ := collada.ParseMeshSkeleton("data/model/cube.dae")
-		if err != nil {
+		colliderMesh, _, err0, _ := collada.ParseMeshSkeleton("data/model/rock.dae")
+		if err0 != nil {
 			log.Fatalln(err0)
 		}
-		colliderShader, err := shader.NewProgram("diffuse_variable_color")
+		shapeA := collision.GenerateCollisionPointsFromConvexMesh(colliderMesh)
+		dynamicMesh, _, err0, _ := collada.ParseMeshSkeleton("data/model/64verts.dae")
+		if err0 != nil {
+			log.Fatalln(err0)
+		}
+		colliderShader, err0 := shader.NewProgram("diffuse_variable_color")
 		if err != nil {
 			log.Fatalln(err)
 		}
 		debugShader, err := shader.NewProgram("debug_collision")
+		if err != nil {
+			log.Fatalln(err)
+		}
+		simplexShader, err := shader.NewProgram("simplex")
 		if err != nil {
 			log.Fatalln(err)
 		}
@@ -149,22 +148,27 @@ func main() {
 		camera := newCamera(mgl32.Vec3{0, 1.5, 5}, &player.Position, &worldGizmo)
 		lightPosition := mgl32.Vec3{0, 0, 0}
 		colliderPosition := mgl32.Vec3{0, 0, 0}
+		colliderRotation := float32(0)
 		colliderMat := mgl32.Ident4()
 		identityMat := mgl32.Ident4()
 		vecZero := mgl32.Vec3{}
 		frameTimer := frameTimer{gameLoopStart: float32(glfw.GetTime()), desiredFrameTime: 1 / float32(fps)}
 		editBone := int32(-1)
-		pressedB := false
+		pressedN := false
 		speed := float32(0)
 		head := float32(0.5)
 		height := float32(0)
-		green := mgl32.Vec4{0, 1, 0, 1}
 		red := mgl32.Vec4{1, 0, 0, 1}
+		purple := mgl32.Vec4{1, 0, 1, 1}
+		green := mgl32.Vec4{0, 1, 0, 1}
 		blue := mgl32.Vec4{0, 0, 1, 1}
 		white := mgl32.Vec4{1, 1, 1, 1}
+		//black := mgl32.Vec4{0, 0, 0, 1}
+		//cyan := mgl32.Vec4{0, 1, 1, 1}
 		environmentShader := shaderDiffuseTexture
 		shapeB := make([]mgl32.Vec3, len(shapeA))
 		CSO := make([]mgl32.Vec3, len(shapeA)*len(shapeB))
+		collisionSteps := 6
 
 		for !window.ShouldClose() {
 			//Update the time manager
@@ -172,11 +176,12 @@ func main() {
 
 			//Get input
 			glfw.PollEvents()
-			handleInput(window, &worldGizmo, &frameTimer, &player, &camera, &colliderPosition, &lightPosition, &speed, &head, &height, &editBone, &pressedB, &environmentShader, shaderDiffuseTexture, shaderPointLitTexture, shaderDiffuseTextureWaving)
+			handleInput(window, &worldGizmo, &frameTimer, &player, &camera, &colliderPosition, &lightPosition, &colliderRotation, &speed, &head, &height, &editBone, &collisionSteps, &pressedN, &environmentShader, shaderDiffuseTexture, shaderPointLitTexture, shaderDiffuseTextureWaving)
 
 			//update variables
-			colliderMat = mgl32.Translate3D(colliderPosition[0], colliderPosition[1], colliderPosition[2])
-			translateShape(shapeA, shapeB, colliderPosition)
+			colliderMat = mgl32.HomogRotate3DY(colliderRotation)
+			colliderMat = mgl32.Translate3D(colliderPosition[0], colliderPosition[1], colliderPosition[2]).Mul4(colliderMat)
+			transformShape(shapeA, shapeB, colliderPosition, colliderRotation)
 			if err := calcMinkowskiDiff(shapeA, shapeB, CSO); err != nil{
 				panic(err)
 			}
@@ -203,13 +208,14 @@ func main() {
 				fmt.Println("fps:", frameTimer.currentFps)
 				fmt.Printf("time: %v;\n", frameTimer.frameStart)
 				fmt.Printf("speed: %v;\nAcceleration: %v;\n\n", player.Velocity.Len(), player.AccDirection.Len())
+				fmt.Printf("collider position %v;\t rotation %v\n", colliderPosition, colliderRotation)
 			}
 
 			gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 
 
-			/*//Update the enviromnet shader
-			gl.UseProgram(environmentShader)
+			//Update the enviromnet shader
+			/*gl.UseProgram(environmentShader)
 			gl.UniformMatrix4fv(gl.GetUniformLocation(environmentShader, gl.Str("vp_mat\x00")), 1, false, &camera.VPMatrix[0])
 			gl.Uniform3f(gl.GetUniformLocation(environmentShader, gl.Str("light_position\x00")), lightPosition[0], lightPosition[1], lightPosition[2])
 			gl.Uniform1f(gl.GetUniformLocation(environmentShader, gl.Str("time\x00")), frameTimer.frameStart)
@@ -225,46 +231,62 @@ func main() {
 			gl.Uniform1i(gl.GetUniformLocation(playerShader, gl.Str("edit_bone\x00")), editBone)
 			model.Mesh.Draw(playerShader, gl.TRIANGLES)
 
+			//DRAW POINT MESHES
 			gl.PointSize(8)
 			gl.UseProgram(debugShader)
 			gl.UniformMatrix4fv(gl.GetUniformLocation(debugShader, gl.Str("vp_mat\x00")), 1, false, &camera.VPMatrix[0])
 			//Draw the origin
-			gl.Uniform3fv(gl.GetUniformLocation(debugShader, gl.Str("dynamic_positions\x00")), 1, &vecZero[0])
-			gl.Uniform1i(gl.GetUniformLocation(debugShader, gl.Str("dynamic_count\x00")), 1)
-			gl.Uniform4fv(gl.GetUniformLocation(debugShader, gl.Str("dynamic_color\x00")), 1, &white[0])
-			collider.Draw(debugShader, gl.POINTS)
-			//Draw shape a
-			gl.Uniform3fv(gl.GetUniformLocation(debugShader, gl.Str("dynamic_positions\x00")), int32(len(shapeA)), &shapeA[0][0])
-			gl.Uniform1i(gl.GetUniformLocation(debugShader, gl.Str("dynamic_count\x00")), int32(len(shapeA)))
-			gl.Uniform4fv(gl.GetUniformLocation(debugShader, gl.Str("dynamic_color\x00")), 1, &green[0])
-			collider.Draw(debugShader, gl.POINTS)
-			//Draw shape b
-			gl.Uniform3fv(gl.GetUniformLocation(debugShader, gl.Str("dynamic_positions\x00")), int32(len(shapeB)), &shapeB[0][0])
-			gl.Uniform1i(gl.GetUniformLocation(debugShader, gl.Str("dynamic_count\x00")), int32(len(shapeB)))
-			gl.Uniform4fv(gl.GetUniformLocation(debugShader, gl.Str("dynamic_color\x00")), 1, &blue[0])
-			collider.Draw(debugShader, gl.POINTS)
-			//Draw the minokwski difference
-			gl.PolygonMode(gl.FRONT_AND_BACK, gl.LINE)
-			gl.Uniform3fv(gl.GetUniformLocation(debugShader, gl.Str("dynamic_positions\x00")), int32(len(CSO)), &CSO[0][0])
-			gl.Uniform1i(gl.GetUniformLocation(debugShader, gl.Str("dynamic_count\x00")),  int32(len(CSO)))
-			gl.Uniform4fv(gl.GetUniformLocation(debugShader, gl.Str("dynamic_color\x00")), 1, &red[0])
-			collider.Draw(debugShader, gl.POINTS)
-			gl.PolygonMode(gl.FRONT_AND_BACK, gl.FILL)
+			gl.Uniform3fv(gl.GetUniformLocation(debugShader, gl.Str("var_positions\x00")), 1, &vecZero[0])
+			gl.Uniform1i(gl.GetUniformLocation(debugShader, gl.Str("var_count\x00")), 1)
+			gl.Uniform4fv(gl.GetUniformLocation(debugShader, gl.Str("var_color\x00")), 1, &white[0])
+			dynamicMesh.Draw(debugShader, gl.POINTS)
 
-			//Dreen collider
+			//Draw shape a
+			gl.Uniform3fv(gl.GetUniformLocation(debugShader, gl.Str("var_positions\x00")), int32(len(shapeA)), &shapeA[0][0])
+			gl.Uniform1i(gl.GetUniformLocation(debugShader, gl.Str("var_count\x00")), int32(len(shapeA)))
+			gl.Uniform4fv(gl.GetUniformLocation(debugShader, gl.Str("var_color\x00")), 1, &green[0])
+			dynamicMesh.Draw(debugShader, gl.POINTS)
+			//Draw shape b
+			gl.Uniform3fv(gl.GetUniformLocation(debugShader, gl.Str("var_positions\x00")), int32(len(shapeB)), &shapeB[0][0])
+			gl.Uniform1i(gl.GetUniformLocation(debugShader, gl.Str("var_count\x00")), int32(len(shapeB)))
+			gl.Uniform4fv(gl.GetUniformLocation(debugShader, gl.Str("var_color\x00")), 1, &blue[0])
+			dynamicMesh.Draw(debugShader, gl.POINTS)
+			//Draw the minokwski difference
+			//gl.PolygonMode(gl.FRONT_AND_BACK, gl.LINE)
+			gl.Uniform3fv(gl.GetUniformLocation(debugShader, gl.Str("var_positions\x00")), int32(len(CSO)), &CSO[0][0])
+			gl.Uniform1i(gl.GetUniformLocation(debugShader, gl.Str("var_count\x00")),  int32(len(CSO)))
+			gl.Uniform4fv(gl.GetUniformLocation(debugShader, gl.Str("var_color\x00")), 1, &red[0])
+			dynamicMesh.Draw(debugShader, gl.POINTS)
+			//gl.PolygonMode(gl.FRONT_AND_BACK, gl.FILL)
+
+			//SYMPLEX RENDERING
+			simplex, order, collided := collision.BGJK(shapeA, shapeB, collisionSteps)
+			gl.UseProgram(simplexShader)
+			gl.UniformMatrix4fv(gl.GetUniformLocation(simplexShader, gl.Str("vp_mat\x00")), 1, false, &camera.VPMatrix[0])
+			gl.Uniform3fv(gl.GetUniformLocation(simplexShader, gl.Str("var_positions\x00")), int32(len(simplex)), &simplex[0][0])
+			gl.Uniform1i(gl.GetUniformLocation(simplexShader, gl.Str("var_count\x00")),  int32(order+1))
+			gl.Uniform4fv(gl.GetUniformLocation(simplexShader, gl.Str("start_color\x00")), 1, &green[0])
+			gl.Uniform4fv(gl.GetUniformLocation(simplexShader, gl.Str("end_color\x00")), 1, &purple[0])
+			dynamicMesh.Draw(simplexShader, gl.LINE_STRIP)
+
+			color := green
+			if collided {
+				color = blue
+			}
+
+			//Green collider
 			gl.UseProgram(colliderShader)
 			gl.UniformMatrix4fv(gl.GetUniformLocation(colliderShader, gl.Str("vp_mat\x00")), 1, false, &camera.VPMatrix[0])
 			gl.UniformMatrix4fv(gl.GetUniformLocation(colliderShader, gl.Str("model_mat\x00")), 1, false, &colliderMat[0])
-			gl.Uniform3fv(gl.GetUniformLocation(colliderShader, gl.Str("var_color\x00")), 1, &green[0])
-			collider.Draw(colliderShader, gl.TRIANGLES)
+			gl.Uniform3fv(gl.GetUniformLocation(colliderShader, gl.Str("var_color\x00")), 1, &color[0])
+			colliderMesh.Draw(colliderShader, gl.TRIANGLES)
 
-			//Yellow collider
+			//Red collider
 			gl.UseProgram(colliderShader)
 			gl.UniformMatrix4fv(gl.GetUniformLocation(colliderShader, gl.Str("vp_mat\x00")), 1, false, &camera.VPMatrix[0])
 			gl.UniformMatrix4fv(gl.GetUniformLocation(colliderShader, gl.Str("model_mat\x00")), 1, false, &identityMat[0])
 			gl.Uniform3fv(gl.GetUniformLocation(colliderShader, gl.Str("var_color\x00")), 1, &red[0])
-			collider.Draw(colliderShader, gl.TRIANGLES)
-
+			colliderMesh.Draw(colliderShader, gl.TRIANGLES)
 
 			window.SwapBuffers()
 		}
@@ -285,13 +307,21 @@ func calcMinkowskiDiff(shapeA, shapeB, CSO []mgl32.Vec3) error {
 	return nil
 }
 
-func translateShape(input, output []mgl32.Vec3, translation mgl32.Vec3) {
+func transformShape(input, output []mgl32.Vec3, translation mgl32.Vec3, rotationAngle float32) {
 	for i := 0; i < len(input); i++{
-		output[i] = input[i].Add(translation)
+		output[i] = (mgl32.Rotate3DY(rotationAngle)).Mul3x1(input[i]).Add(translation)
 	}
 }
 
-func clamp(a float32, i float32, b float32) float32 {
+func clamp(a, i,  b float32) float32 {
+	if i < a {
+		return a
+	} else if i > b {
+		return b
+	}
+	return i
+}
+func clampInt(a, i, b int) int {
 	if i < a {
 		return a
 	} else if i > b {
@@ -301,7 +331,7 @@ func clamp(a float32, i float32, b float32) float32 {
 }
 
 //Input function
-func handleInput(window *glfw.Window, world *gizmo, frameTimer *frameTimer, player *player, camera *camera, colliderPosition, lightPosition *mgl32.Vec3, speed, head, height *float32, editBone *int32, pressedB *bool, envShader *uint32, firstShader, secondShader, thirdShader uint32) {
+func handleInput(window *glfw.Window, world *gizmo, frameTimer *frameTimer, player *player, camera *camera, colliderPosition, lightPosition *mgl32.Vec3, colliderRotation, speed, head, height *float32, editBone *int32, collisionSteps *int, pressedN *bool, envShader *uint32, firstShader, secondShader, thirdShader uint32) {
 	var maxTiltAngle float32 = 0.25
 	var lightSpeed float32 = 3
 	var maxSpeed float32 = 10
@@ -324,9 +354,11 @@ func handleInput(window *glfw.Window, world *gizmo, frameTimer *frameTimer, play
 	if window.GetKey(glfw.Key3) == glfw.Press {
 		*envShader = thirdShader
 	}
+	pressedShift := false
 	//Time slowdown
 	if window.GetKey(glfw.KeyLeftShift) == glfw.Press {
 		frameTimer.deltaTime /= 8
+		pressedShift = true
 	}
 	deltaTime := frameTimer.deltaTime
 	if !player.InAir && window.GetKey(glfw.KeySpace) == glfw.Press {
@@ -422,7 +454,7 @@ func handleInput(window *glfw.Window, world *gizmo, frameTimer *frameTimer, play
 			player.Angle += angularVelocity * deltaTime
 		}
 	}
-	//LIGHT MOTION
+	//LIGHT/COLLIDER MOTION
 	if window.GetKey(glfw.KeyUp) == glfw.Press {
 		*lightPosition = lightPosition.Add(camera.Forward.Mul(lightSpeed * deltaTime))
 		*colliderPosition = colliderPosition.Add(camera.Forward.Mul(lightSpeed * deltaTime))
@@ -439,16 +471,28 @@ func handleInput(window *glfw.Window, world *gizmo, frameTimer *frameTimer, play
 		*lightPosition = lightPosition.Add(camera.Left.Mul(-lightSpeed * deltaTime))
 		*colliderPosition = colliderPosition.Add(camera.Left.Mul(-lightSpeed * deltaTime))
 	}
-	//POSE EDITING
-	if window.GetKey(glfw.KeyB) == glfw.Press {
-		*pressedB = true
+	//COLLISION VISUALIZATION
+	if window.GetKey(glfw.KeyJ) == glfw.Press{
+		*colliderRotation += lightSpeed * deltaTime
 	}
-	if *pressedB && window.GetKey(glfw.KeyB) == glfw.Release {
-		*editBone += 1;
+	if window.GetKey(glfw.KeyK) == glfw.Press{
+		*colliderRotation -= lightSpeed * deltaTime
+	}
+	//POSE EDITING/COLLISION STEPING
+	if window.GetKey(glfw.KeyN) == glfw.Press {
+		*pressedN = true
+	}
+	if *pressedN && window.GetKey(glfw.KeyN) == glfw.Release {
+		//*editBone++;
+		*collisionSteps++
+		if pressedShift{
+			*collisionSteps -= 2
+		}
 		if *editBone >= 0{
 			*editBone %= 15;
 		}
-		*pressedB = false
+		*collisionSteps = clampInt(0, *collisionSteps, 10)
+		*pressedN = false
 	}
 	//ANIMATION BLENDING
 	if window.GetKey(glfw.KeyL) == glfw.Press {

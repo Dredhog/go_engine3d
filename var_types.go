@@ -61,7 +61,7 @@ func newCamera(offset mgl32.Vec3, target *mgl32.Vec3, world *gizmo) camera {
 	cam.Left = world.yAxis.Cross(cam.Offset.Mul(-1)).Normalize()
 	cam.Forward = cam.Left.Cross(world.yAxis).Normalize()
 	cam.ViewMatrix = mgl32.LookAtV(cam.Target.Add(cam.Offset), *cam.Target, world.yAxis)
-	cam.ProjectionMatrix = mgl32.Perspective(3.14159/4, 1.6, 0.1, 1000)
+	cam.ProjectionMatrix = mgl32.Perspective(3.14159/4, 1.6, 0.1, 1000)//mgl32.Ortho(-5, 5, -3, 3, -10, 100)
 	cam.VPMatrix = cam.ProjectionMatrix.Mul4(cam.ViewMatrix)
 	return cam
 }
@@ -78,8 +78,8 @@ func (c *camera) Update(x, y float64, speedPercent float32, playerDir *mgl32.Vec
 	c.Forward = rotY.Mul3x1(mgl32.Vec3{0, 0, -1})
 	c.Left = rotY.Mul3x1(mgl32.Vec3{-1, 0, 0})
 	//Field of view for speed effect
-	towardsSpeed := clamp(0, playerDir.Dot(c.Forward), 1)
-	c.ProjectionMatrix = mgl32.Perspective(3.14159/(4-speedPercent*towardsSpeed*0.4), 1.6, 0.1, 1000)
+	//towardsSpeed := clamp(0, playerDir.Dot(c.Forward), 1)
+	//c.ProjectionMatrix = mgl32.Perspective(3.14159/(4-speedPercent*towardsSpeed*0.4), 1.6, 0.1, 1000)
 	c.ViewMatrix = mgl32.LookAtV(c.Target.Add(c.Position), c.Target.Add(mgl32.Vec3{0, 1, 0}), mgl32.Vec3{0, 1, 0})
 	c.VPMatrix = c.ProjectionMatrix.Mul4(c.ViewMatrix)
 }

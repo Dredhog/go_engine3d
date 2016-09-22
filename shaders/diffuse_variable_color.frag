@@ -5,7 +5,7 @@ in vec3 Normal;
 in vec3 Color;
 
 out vec4 outColor;
-vec3 light_position = vec3(0, 0, 0);
+vec3 light_position = vec3(2, 0, 2);
 
 void main(){
 	//Phong light diffuse and alfa effect
@@ -13,5 +13,5 @@ void main(){
 	float diffuse_alpha = max(light_dot_normal, 0.2);
 
 	outColor = vec4(Color, 1) * diffuse_alpha;
-	outColor.a = 0.6;
+	outColor.a = 0.7;
 }
