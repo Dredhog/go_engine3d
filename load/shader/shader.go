@@ -60,6 +60,7 @@ func NewProgram(fileName string) (uint32, error) {
 
 	return program, nil
 }
+
 func compileShader(source string, shaderType uint32) (uint32, error) {
 	shader := gl.CreateShader(shaderType)
 

@@ -13,8 +13,8 @@ func BGJK(shapeA, shapeB []mgl32.Vec3, stepCount int) ([]mgl32.Vec3, int, bool) 
 	order := 0
 
 	dir := simplex[0].Mul(-1)
-	for i := 0; ; i++ {
-		if i == stepCount{
+	for i := 0; i < stepCount; i++ {
+		if i == stepCount {
 			break
 		}
 		//fmt.Printf("-------------Step %v---------------\n", i)
@@ -25,7 +25,7 @@ func BGJK(shapeA, shapeB []mgl32.Vec3, stepCount int) ([]mgl32.Vec3, int, bool) 
 		order++
 		simplex[order] = a
 		i++
-		if i == stepCount{
+		if i == stepCount {
 			break
 		}
 		if order == 3 && doSimplex3(simplex, &dir, &order) {
@@ -93,7 +93,7 @@ func doSimplex3(simplex []mgl32.Vec3, dir *mgl32.Vec3, order *int) bool {
 				return false
 			}
 			//acd region
-			simplex[0] = simplex[0]	//assign d to [0]
+			simplex[0] = simplex[0] //assign d to [0]
 			simplex[1] = simplex[1] //assign c to [1]
 			simplex[2] = simplex[3] //assign a to [2]
 			*dir = acd
@@ -110,7 +110,7 @@ func doSimplex3(simplex []mgl32.Vec3, dir *mgl32.Vec3, order *int) bool {
 				return false
 			}
 			//adb region
-			simplex[0] = simplex[0]	//assign d to [0]
+			simplex[0] = simplex[0] //assign d to [0]
 			simplex[1] = simplex[3] //assign b to [1]
 			simplex[2] = simplex[2] //assign a to [2]
 			*dir = adb
@@ -119,7 +119,7 @@ func doSimplex3(simplex []mgl32.Vec3, dir *mgl32.Vec3, order *int) bool {
 			return false
 		}
 		//abc region
-		simplex[0] = simplex[1]	//assign c to [0]
+		simplex[0] = simplex[1] //assign c to [0]
 		simplex[1] = simplex[2] //assign b to [1]
 		simplex[2] = simplex[3] //assign a to [2]
 		*dir = abc
@@ -144,7 +144,7 @@ func doSimplex3(simplex []mgl32.Vec3, dir *mgl32.Vec3, order *int) bool {
 				return false
 			}
 			//acd region
-			simplex[0] = simplex[0]	//assign d to [0]
+			simplex[0] = simplex[0] //assign d to [0]
 			simplex[1] = simplex[1] //assign c to [1]
 			simplex[2] = simplex[3] //assign a to [2]
 			*dir = acd
@@ -153,7 +153,7 @@ func doSimplex3(simplex []mgl32.Vec3, dir *mgl32.Vec3, order *int) bool {
 			return false
 		}
 		//adb region
-		simplex[0] = simplex[0]	//assign d to [0]
+		simplex[0] = simplex[0] //assign d to [0]
 		simplex[1] = simplex[3] //assign a to [1]
 		simplex[2] = simplex[2] //assign b to [2]
 		*dir = adb
@@ -177,7 +177,7 @@ func doSimplex3(simplex []mgl32.Vec3, dir *mgl32.Vec3, order *int) bool {
 			return false
 		}
 		//acd region
-		simplex[0] = simplex[0]	//assign d to [0]
+		simplex[0] = simplex[0] //assign d to [0]
 		simplex[1] = simplex[1] //assign c to [1]
 		simplex[2] = simplex[3] //assign a to [2]
 		*dir = acd

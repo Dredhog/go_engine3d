@@ -61,7 +61,7 @@ func newCamera(offset mgl32.Vec3, target *mgl32.Vec3, world *gizmo) camera {
 	cam.Left = world.yAxis.Cross(cam.Offset.Mul(-1)).Normalize()
 	cam.Forward = cam.Left.Cross(world.yAxis).Normalize()
 	cam.ViewMatrix = mgl32.LookAtV(cam.Target.Add(cam.Offset), *cam.Target, world.yAxis)
-	cam.ProjectionMatrix = mgl32.Perspective(3.14159/4, 1.6, 0.1, 1000)//mgl32.Ortho(-5, 5, -3, 3, -10, 100)
+	cam.ProjectionMatrix = mgl32.Perspective(3.14159/4, 1.6, 0.1, 1000) //mgl32.Ortho(-5, 5, -3, 3, -10, 100)//
 	cam.VPMatrix = cam.ProjectionMatrix.Mul4(cam.ViewMatrix)
 	return cam
 }

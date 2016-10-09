@@ -25,7 +25,7 @@ func init() {
 const (
 	screenWidth  = 1920
 	screenHeight = 1080
-	fps          = 200
+	fps          = 120
 )
 
 func main() {
@@ -94,7 +94,7 @@ func main() {
 		}
 		model.Mesh.Textures = []types.Texture{{playerDiffuseTexture, "diffuse"}}
 
-		//Load collidion data
+		//Load collision data
 		colliderMesh, _, err0, _ := collada.ParseMeshSkeleton("data/model/rock.dae")
 		if err0 != nil {
 			log.Fatalln(err0)
@@ -168,7 +168,7 @@ func main() {
 		environmentShader := shaderDiffuseTexture
 		shapeB := make([]mgl32.Vec3, len(shapeA))
 		CSO := make([]mgl32.Vec3, len(shapeA)*len(shapeB))
-		collisionSteps := 6
+		collisionSteps := 15
 
 		for !window.ShouldClose() {
 			//Update the time manager
@@ -182,7 +182,7 @@ func main() {
 			colliderMat = mgl32.HomogRotate3DY(colliderRotation)
 			colliderMat = mgl32.Translate3D(colliderPosition[0], colliderPosition[1], colliderPosition[2]).Mul4(colliderMat)
 			transformShape(shapeA, shapeB, colliderPosition, colliderRotation)
-			if err := calcMinkowskiDiff(shapeA, shapeB, CSO); err != nil{
+			if err := calcMinkowskiDiff(shapeA, shapeB, CSO); err != nil {
 				panic(err)
 			}
 
@@ -212,7 +212,6 @@ func main() {
 			}
 
 			gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
-
 
 			//Update the enviromnet shader
 			/*gl.UseProgram(environmentShader)
@@ -254,7 +253,7 @@ func main() {
 			//Draw the minokwski difference
 			//gl.PolygonMode(gl.FRONT_AND_BACK, gl.LINE)
 			gl.Uniform3fv(gl.GetUniformLocation(debugShader, gl.Str("var_positions\x00")), int32(len(CSO)), &CSO[0][0])
-			gl.Uniform1i(gl.GetUniformLocation(debugShader, gl.Str("var_count\x00")),  int32(len(CSO)))
+			gl.Uniform1i(gl.GetUniformLocation(debugShader, gl.Str("var_count\x00")), int32(len(CSO)))
 			gl.Uniform4fv(gl.GetUniformLocation(debugShader, gl.Str("var_color\x00")), 1, &red[0])
 			dynamicMesh.Draw(debugShader, gl.POINTS)
 			//gl.PolygonMode(gl.FRONT_AND_BACK, gl.FILL)
@@ -264,7 +263,7 @@ func main() {
 			gl.UseProgram(simplexShader)
 			gl.UniformMatrix4fv(gl.GetUniformLocation(simplexShader, gl.Str("vp_mat\x00")), 1, false, &camera.VPMatrix[0])
 			gl.Uniform3fv(gl.GetUniformLocation(simplexShader, gl.Str("var_positions\x00")), int32(len(simplex)), &simplex[0][0])
-			gl.Uniform1i(gl.GetUniformLocation(simplexShader, gl.Str("var_count\x00")),  int32(order+1))
+			gl.Uniform1i(gl.GetUniformLocation(simplexShader, gl.Str("var_count\x00")), int32(order+1))
 			gl.Uniform4fv(gl.GetUniformLocation(simplexShader, gl.Str("start_color\x00")), 1, &green[0])
 			gl.Uniform4fv(gl.GetUniformLocation(simplexShader, gl.Str("end_color\x00")), 1, &purple[0])
 			dynamicMesh.Draw(simplexShader, gl.LINE_STRIP)
@@ -294,12 +293,12 @@ func main() {
 }
 
 func calcMinkowskiDiff(shapeA, shapeB, CSO []mgl32.Vec3) error {
-	if len(CSO) != len(shapeA)*len(shapeB){
+	if len(CSO) != len(shapeA)*len(shapeB) {
 		return fmt.Errorf("Mikowski: number of points in cso does not match input shapes.")
 	}
 	vertInd := 0
-	for i := 0; i < len(shapeA); i++{
-		for j := 0; j < len(shapeB); j++{
+	for i := 0; i < len(shapeA); i++ {
+		for j := 0; j < len(shapeB); j++ {
 			CSO[vertInd] = shapeA[i].Sub(shapeB[j])
 			vertInd++
 		}
@@ -308,12 +307,12 @@ func calcMinkowskiDiff(shapeA, shapeB, CSO []mgl32.Vec3) error {
 }
 
 func transformShape(input, output []mgl32.Vec3, translation mgl32.Vec3, rotationAngle float32) {
-	for i := 0; i < len(input); i++{
+	for i := 0; i < len(input); i++ {
 		output[i] = (mgl32.Rotate3DY(rotationAngle)).Mul3x1(input[i]).Add(translation)
 	}
 }
 
-func clamp(a, i,  b float32) float32 {
+func clamp(a, i, b float32) float32 {
 	if i < a {
 		return a
 	} else if i > b {
@@ -472,10 +471,10 @@ func handleInput(window *glfw.Window, world *gizmo, frameTimer *frameTimer, play
 		*colliderPosition = colliderPosition.Add(camera.Left.Mul(-lightSpeed * deltaTime))
 	}
 	//COLLISION VISUALIZATION
-	if window.GetKey(glfw.KeyJ) == glfw.Press{
+	if window.GetKey(glfw.KeyJ) == glfw.Press {
 		*colliderRotation += lightSpeed * deltaTime
 	}
-	if window.GetKey(glfw.KeyK) == glfw.Press{
+	if window.GetKey(glfw.KeyK) == glfw.Press {
 		*colliderRotation -= lightSpeed * deltaTime
 	}
 	//POSE EDITING/COLLISION STEPING
@@ -485,13 +484,13 @@ func handleInput(window *glfw.Window, world *gizmo, frameTimer *frameTimer, play
 	if *pressedN && window.GetKey(glfw.KeyN) == glfw.Release {
 		//*editBone++;
 		*collisionSteps++
-		if pressedShift{
+		if pressedShift {
 			*collisionSteps -= 2
 		}
-		if *editBone >= 0{
-			*editBone %= 15;
+		if *editBone >= 0 {
+			*editBone %= 15
 		}
-		*collisionSteps = clampInt(0, *collisionSteps, 10)
+		*collisionSteps = clampInt(0, *collisionSteps, 20)
 		*pressedN = false
 	}
 	//ANIMATION BLENDING
