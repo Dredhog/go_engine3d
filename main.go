@@ -214,11 +214,11 @@ func main() {
 			gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 
 			//Update the enviromnet shader
-			/*gl.UseProgram(environmentShader)
+			gl.UseProgram(environmentShader)
 			gl.UniformMatrix4fv(gl.GetUniformLocation(environmentShader, gl.Str("vp_mat\x00")), 1, false, &camera.VPMatrix[0])
 			gl.Uniform3f(gl.GetUniformLocation(environmentShader, gl.Str("light_position\x00")), lightPosition[0], lightPosition[1], lightPosition[2])
 			gl.Uniform1f(gl.GetUniformLocation(environmentShader, gl.Str("time\x00")), frameTimer.frameStart)
-			level.Draw(environmentShader, gl.TRIANGLES)*/
+			level.Draw(environmentShader, gl.TRIANGLES)
 
 			//Update the player shader
 			gl.UseProgram(playerShader)
