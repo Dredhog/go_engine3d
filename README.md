@@ -1,7 +1,7 @@
 go_engine3d
 ========
 
-3d game engine with third person character control. Also - my first encounter with OpenGL and GPU programming. Was also an excersize in uzing google's go language in a practical setting. Figured out that a memory managed language could not be used for ful game developement after noticing that large textures stay in memory way longer than desired. Went on to make c/c++ codebases in the future.
+My first 3D game engine as well as my first encounter with OpenGL and GPU programming. The project was also an exercise in using google's go language in a practical setting. I learned the hard way that a memory managed language such as go is not suitable for serious game developement after noticing that textures stay in memory way longer in memory than desired. This pushed me to go make more c/c++ codebases in the future.
 
 ## Features
 
@@ -17,7 +17,7 @@ go_engine3d
 * glsl shading
   - Basic
 
-## Demo scene
+## Scene Demo
 
 ![Screenshot](docs/character_control_and_collision_detection.png "Third person character on test map beside collision debug geometry")
 
